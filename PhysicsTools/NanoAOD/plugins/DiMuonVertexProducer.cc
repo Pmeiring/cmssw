@@ -42,7 +42,7 @@
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
-
+#include "TrackingTools/PatternTools/interface/ClosestApproachInRPhi.h"
 #include "PhysicsTools/NanoAOD/plugins/SecondaryVertexFitter.h"
 
 
@@ -132,6 +132,15 @@ DiMuonVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
           tranmu2=reco::TransientTrack((*(mu2->tunePMuonBestTrack() )), &(*bFieldHandle));
         }
 
+        // DCA between the muons
+        TrajectoryStateClosestToPoint mu1TS = tranmu1.impactPointTSCP();
+        TrajectoryStateClosestToPoint mu2TS = tranmu2.impactPointTSCP();
+        ClosestApproachInRPhi cApp;        
+        if (mu1TS.isValid() && mu2TS.isValid()){
+          cApp.calculate(mu1TS.theState(), mu2TS.theState());
+          if (!cApp.status()) continue;
+        }
+
         //fit
         TransientTrackCollection mutrk{ tranmu1, tranmu2};
         SecondaryVertexFitter vtx(mutrk,{MUON_MASS,MUON_MASS},refit_);
@@ -157,9 +166,9 @@ DiMuonVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         muon_pair.addUserFloat("vtx_z",vtx.motherXYZ().z());
 
         //distance variables
-	GlobalPoint Dispbeamspot(
-				 -1*((bspot->x0()-vtx.motherXYZ().x())+(vtx.motherXYZ().z()-bspot->z0())* bspot->dxdz()),
-				 -1*((bspot->y0()-vtx.motherXYZ().y())+ (vtx.motherXYZ().z()-bspot->z0()) * bspot->dydz()), 0);
+  GlobalPoint Dispbeamspot(
+         -1*((bspot->x0()-vtx.motherXYZ().x())+(vtx.motherXYZ().z()-bspot->z0())* bspot->dxdz()),
+         -1*((bspot->y0()-vtx.motherXYZ().y())+ (vtx.motherXYZ().z()-bspot->z0()) * bspot->dydz()), 0);
 
         float Lxy = Dispbeamspot.perp();  
         float eLxy= vtx.motherXYZError().rerr(Dispbeamspot); 
@@ -168,10 +177,11 @@ DiMuonVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         muon_pair.addUserFloat("IP_fromBS",Lxy);
         muon_pair.addUserFloat("EIP_fromBS",eLxy);
         muon_pair.addUserFloat("SIP_fromBS",eLxy !=0 ? Lxy/eLxy : 0);
-	
+        muon_pair.addUserFloat("DCA",cApp.distance());
+  
         GlobalPoint DispFromPV(
-			        pv.x()-vtx.motherXYZ().x(),
-			        pv.y()-vtx.motherXYZ().y(), 
+              pv.x()-vtx.motherXYZ().x(),
+              pv.y()-vtx.motherXYZ().y(), 
                                 0 
                                );
 
@@ -183,25 +193,11 @@ DiMuonVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         muon_pair.addUserFloat("EIP_fromPV",eLxyPV);
         muon_pair.addUserFloat("SIP_fromPV",eLxyPV != 0 ? LxyPV/eLxyPV : 0);
 
-        // IP as shown at: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideTransientTracks 
-        GlobalPoint vert(vtx.motherXYZ().x(), vtx.motherXYZ().y(), vtx.motherXYZ().z());
-        TrajectoryStateClosestToPoint traj1 = tranmu1.trajectoryStateClosestToPoint(vert );
-        TrajectoryStateClosestToPoint traj2 = tranmu2.trajectoryStateClosestToPoint(vert );
-        double dxyz_SV_mu1 = sqrt( pow(traj1.perigeeParameters().transverseImpactParameter(), 2) + pow(traj1.perigeeParameters().longitudinalImpactParameter(), 2) );
-        double dxyz_SV_mu2 = sqrt( pow(traj2.perigeeParameters().transverseImpactParameter(), 2) + pow(traj2.perigeeParameters().longitudinalImpactParameter(), 2) );
-        // Save the largest dxyz
-        if (dxyz_SV_mu1 < dxyz_SV_mu2){
-          muon_pair.addUserFloat("dxyz_SV", dxyz_SV_mu2);
-        }
-        else{
-          muon_pair.addUserFloat("dxyz_SV", dxyz_SV_mu1);          
-        }
-
         //daughter refited
-	std::vector<unsigned> DaughterOrder{0,1};
+  std::vector<unsigned> DaughterOrder{0,1};
         if (mu2->pt()>mu->pt() ){
-	  DaughterOrder.clear();
-      	  DaughterOrder=std::vector<unsigned>({1,0});          
+    DaughterOrder.clear();
+          DaughterOrder=std::vector<unsigned>({1,0});          
         }
         int muOrder=1;
         for (unsigned i: DaughterOrder){
