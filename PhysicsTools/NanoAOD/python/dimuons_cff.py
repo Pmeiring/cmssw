@@ -6,10 +6,10 @@ DiMuonVertex = cms.EDProducer("DiMuonVertexProducer",
     muons = cms.InputTag("finalMuons"),
     beamSpot = cms.InputTag("offlineBeamSpot"),
     vertices = cms.InputTag("offlineSlimmedPrimaryVertices"),
-    mu1Selection = cms.string ("pt>5 && abs(eta)<2.4"),
-    mu2Selection = cms.string ("pt>3 && abs(eta)<2.4"),
-    preVtxSelection = cms.string ("pt>5 && abs(eta)<2.4"),
-    postVtxSelection = cms.string ("userFloat('prob')>0.01"), # WP 0.01
+    mu1Selection = cms.string ("abs(eta)<2.4"),
+    mu2Selection = cms.string ("abs(eta)<2.4"),
+    preVtxSelection = cms.string ("abs(eta)<2.4"),
+    postVtxSelection = cms.string ("userFloat('prob')>0.00"), # WP 0.01
     RefitTracks = cms.bool (True),
     FitTunePTransientTracks = cms.bool(True),
 )
@@ -38,7 +38,12 @@ DiMuonTable = cms.EDProducer("SimpleCompositeCandidateFlatTableProducer",
       IP_fromPV = Var("userFloat('IP_fromPV')",float,doc="2D impact parameter measured from primary vertex",precision=12),
       SIP_fromPV = Var("userFloat('SIP_fromPV')",float,doc="significance of 2D impact parameter measured from primary vertex",precision=12),
       mu1_idx = Var("userInt('mu1_idx')",int,doc="idx of leading muon"),
+      mu1_pt =  Var("userFloat('mu1_pt')",float,doc="pt of leading muon"),
+      mu1_eta = Var("userFloat('mu1_eta')",float,doc="eta of leading muon"),
+      mu1_phi = Var("userFloat('mu1_phi')",float,doc="phi of leading muon"),
       mu2_idx = Var("userInt('mu2_idx')",int,doc="idx of subleading muon"),
-
+      mu2_pt =  Var("userFloat('mu2_pt')",float,doc="pt of subleading muon"),
+      mu2_eta = Var("userFloat('mu2_eta')",float,doc="eta of subleading muon"),
+      mu2_phi = Var("userFloat('mu2_phi')",float,doc="phi of subleading muon"),
     )
 )

@@ -166,7 +166,7 @@ DiMuonVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         muon_pair.addUserFloat("vtx_z",vtx.motherXYZ().z());
 
         //distance variables
-  GlobalPoint Dispbeamspot(
+        GlobalPoint Dispbeamspot(
          -1*((bspot->x0()-vtx.motherXYZ().x())+(vtx.motherXYZ().z()-bspot->z0())* bspot->dxdz()),
          -1*((bspot->y0()-vtx.motherXYZ().y())+ (vtx.motherXYZ().z()-bspot->z0()) * bspot->dydz()), 0);
 
@@ -194,9 +194,9 @@ DiMuonVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
         muon_pair.addUserFloat("SIP_fromPV",eLxyPV != 0 ? LxyPV/eLxyPV : 0);
 
         //daughter refited
-  std::vector<unsigned> DaughterOrder{0,1};
+        std::vector<unsigned> DaughterOrder{0,1};
         if (mu2->pt()>mu->pt() ){
-    DaughterOrder.clear();
+          DaughterOrder.clear();
           DaughterOrder=std::vector<unsigned>({1,0});          
         }
         int muOrder=1;
