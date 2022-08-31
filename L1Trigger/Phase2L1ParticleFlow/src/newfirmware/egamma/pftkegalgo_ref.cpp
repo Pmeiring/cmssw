@@ -1,4 +1,6 @@
 #include "pftkegalgo_ref.h"
+#include "DataFormats/L1THGCal/interface/HGCalMulticluster.h"
+
 
 #include <cmath>
 #include <cstdio>
@@ -186,8 +188,7 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_elliptic(const PFRegionEmu &r,
 void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
                                         const std::vector<EmCaloObjEmu> &emcalo,
                                         const std::vector<TkObjEmu> &track,
-                                        std::vector<int> &emCalo2tk,
-                                        const PFTkEGAlgoEmuConfig::CompIDParameters &params) const {
+                                        std::vector<int> &emCalo2tk) const {
   //FIXME: should be configurable
   const int nCAND_PER_CLUSTER = 4;
   unsigned int nTrackMax = std::min<unsigned>(track.size(), cfg.nTRACK_EGIN);
@@ -201,34 +202,19 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
           if (tk.floatPt() < cfg.trkQualityPtMin)
             continue;
 
-      // float d_phi = deltaPhi(tk.floatPhi(), calo.floatPhi());
-      // float d_eta = tk.floatEta() - calo.floatEta();  // We only use it squared
-      float clu_eta=calo.floatEta();
+      float clu_eta=calo.floatEta();  
       float clu_phi=calo.floatPhi();
       float trk_eta=tk.floatEta();
       float trk_phi=tk.floatPhi();
       float dR = deltaR(clu_eta,clu_phi,trk_eta,trk_phi);
 
-      // if (((d_phi * d_phi ) + (d_eta * d_eta )) < 0.2 * 0.2) {
       if (dR<0.2){
+          // Only store indices, dR and dpT for now. The other quantities are computed only for the best nCandPerCluster.
           CompositeCandidate cand;
           cand.cluster_idx = ic;
           cand.track_idx = itk;
-          // cand.dR = sqrt((d_phi * d_phi ) + (d_eta * d_eta ));
           cand.dR = dR;
           cand.dpt_double = tk.floatPt()/calo.floatPt();
-          // Normalize feature values
-          cand.hoe = (calo.src->hOverE()-params.hoeMin)/(params.hoeMax-params.hoeMin);
-          cand.tkpt = (tk.floatPt()-params.tkptMin)/(params.tkptMax-params.tkptMin);
-          cand.srrtot = (dynamic_cast<const l1t::HGCalMulticluster *>(calo.src->constituentsAndFractions()[0].first.get())->sigmaRRTot()-params.srrtotMin)/(params.srrtotMax-params.srrtotMin); //FIXME: Get the srrtot from the cluster
-          std::cout << "SRRTOT: " << dynamic_cast<const l1t::HGCalMulticluster *>(calo.src->constituentsAndFractions()[0].first.get())->sigmaRRTot() << std::endl;
-          cand.deta = (tk.src->caloEta()-calo.floatEta()-params.detaMin)/(params.detaMax-params.detaMin);
-          cand.dpt = ((tk.floatPt()/calo.floatPt())-params.dptMin)/(params.dptMax-params.dptMin);
-          cand.meanz = (dynamic_cast<const l1t::HGCalMulticluster *>(calo.src->constituentsAndFractions()[0].first.get())->zBarycenter()-params.meanzMin)/(params.meanzMax-params.meanzMin); //FIXME: Get the meanz from the cluster
-          cand.dphi = (tk.src->caloPhi()- calo.floatPhi() -params.dphiMin)/(params.dphiMax-params.dphiMin);
-          cand.chi2 = (tk.src->chi2()-params.tkchi2Min)/(params.tkchi2Max-params.tkchi2Min);
-          cand.tkz0 = (tk.floatZ0()-params.tkz0Min)/(params.tkz0Max-params.tkz0Min);
-          cand.nstubs = (tk.src->nStubs()-params.tknstubsMin)/(params.tknstubsMax-params.tknstubsMin);
           candidates.push_back(cand);
       }
     }
@@ -240,14 +226,15 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
     std::cout << "# composit candidates: " << nCandPerCluster << std::endl;
     if(nCandPerCluster == 0) continue;
 
-    float bdtWP = 10;
-    float minScore = 999;
+    float bdtWP = cfg.myCompIDparams.BDTcut_wp97p5;
+    float maxScore = -999;
     int ibest = -1;
     for(unsigned int icand = 0; icand < nCandPerCluster; icand++) {
       auto &cand = candidates[icand];
-      float score = compute_composite_score(cand);
-      if((score < bdtWP) && (score < minScore)) {
-        minScore = score;
+      std::vector<EmCaloObjEmu> emcalo_sel = emcalo;
+      float score = compute_composite_score(cand, emcalo_sel, track, cfg.myCompIDparams);
+      if((score > bdtWP) && (score > maxScore)) {
+        maxScore = score;
         ibest = icand;
       }
     }    
@@ -256,10 +243,37 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
 }
 
 
-float PFTkEGAlgoEmulator::compute_composite_score(const CompositeCandidate& cand) const {
+float PFTkEGAlgoEmulator::compute_composite_score(CompositeCandidate &cand,
+                                                  const std::vector<EmCaloObjEmu> &emcalo,
+                                                  const std::vector<TkObjEmu> &track,
+                                                  const PFTkEGAlgoEmuConfig::CompIDParameters &params) const {
+
+  // Get the cluster/track objects that form the composite candidate
+  const auto &calo = emcalo[cand.cluster_idx];
+  const auto &tk = track[cand.track_idx];
+
+  // FIXME: using these two floats crashes code...
+  float srrtot = dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->sigmaRRTot();
+  float meanz = dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->zBarycenter();
+
+  // Call and normalize input feature values, then cast to ap_fixed.
+  // Note that for some features (e.g. track pT) we call the floating point representation, but that's already quantized!
+  // Several other features, such as chi2 or most cluster features, are not quantized before casting them to ap_fixed.
+  cand.hoe = (calo.src->hOverE()-params.hoeMin)/(params.hoeMax-params.hoeMin);
+  cand.tkpt = (tk.floatPt()-params.tkptMin)/(params.tkptMax-params.tkptMin);
+  cand.srrtot = (1.-params.srrtotMin)/(params.srrtotMax-params.srrtotMin);
+  cand.deta = (tk.src->caloEta()-calo.floatEta()-params.detaMin)/(params.detaMax-params.detaMin);
+  cand.dpt = ((tk.floatPt()/calo.floatPt())-params.dptMin)/(params.dptMax-params.dptMin);
+  cand.meanz = (1.-params.meanzMin)/(params.meanzMax-params.meanzMin);
+  cand.dphi = (tk.src->caloPhi()- calo.floatPhi() -params.dphiMin)/(params.dphiMax-params.dphiMin);
+  cand.chi2 = (tk.src->chi2()-params.tkchi2Min)/(params.tkchi2Max-params.tkchi2Min);
+  cand.tkz0 = (tk.floatZ0()-params.tkz0Min)/(params.tkz0Max-params.tkz0Min);
+  cand.nstubs = (tk.src->nStubs()-params.tknstubsMin)/(params.tknstubsMax-params.tknstubsMin);
+
+  // Run BDT inference
   vector<ap_fixed<22,3,AP_RND_CONV,AP_SAT>> inputs = { cand.hoe, cand.tkpt, cand.srrtot, cand.deta, cand.dpt, cand.meanz, cand.dphi, cand.chi2, cand.tkz0, cand.nstubs } ;
   auto bdt_score = composite_bdt_->decision_function(inputs);
-  std::cout<<"BDT score or composite candidate = "<<bdt_score[0]<<std::endl;
+  std::cout<<"BDT score of composite candidate = "<<bdt_score[0]<<std::endl;
   return bdt_score[0];
 }
 
@@ -302,7 +316,7 @@ void PFTkEGAlgoEmulator::run(const PFInputRegion &in, OutputRegion &out) const {
 
   std::vector<int> emCalo2tk(emcalo_sel.size(), -1);
   if(cfg.doCompositeTkEle) {
-    link_emCalo2tk_composite(in.region, emcalo_sel, in.track, emCalo2tk, cfg.myCompIDparams);
+    link_emCalo2tk_composite(in.region, emcalo_sel, in.track, emCalo2tk);
   } else {
     link_emCalo2tk_elliptic(in.region, emcalo_sel, in.track, emCalo2tk);
   }
