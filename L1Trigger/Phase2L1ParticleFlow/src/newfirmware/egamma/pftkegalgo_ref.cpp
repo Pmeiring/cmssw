@@ -202,15 +202,12 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
           if (tk.floatPt() < cfg.trkQualityPtMin)
             continue;
 
-      // float d_phi = deltaPhi(tk.floatPhi(), calo.floatPhi());
-      // float d_eta = tk.floatEta() - calo.floatEta();  // We only use it squared
-      float clu_eta=calo.floatEta();
+      float clu_eta=calo.floatEta();  
       float clu_phi=calo.floatPhi();
-      float trk_eta=tk.src->caloEta();
-      float trk_phi=tk.src->caloPhi();
+      float trk_eta=tk.src->caloEta(); // absolute coordinates. trk.float_eta would give coordinates at calosurface relative to region center
+      float trk_phi=tk.src->caloPhi(); 
       float dR = deltaR(clu_eta,clu_phi,trk_eta,trk_phi);
 
-      // if (((d_phi * d_phi ) + (d_eta * d_eta )) < 0.2 * 0.2) {
       if (dR<0.2){
           // Only store indices, dR and dpT for now. The other quantities are computed only for the best nCandPerCluster.
           CompositeCandidate cand;
@@ -218,19 +215,6 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
           cand.track_idx = itk;
           cand.dR = dR;
           cand.dpt_double = tk.floatPt()/calo.floatPt();
-
-          // FIXME: put these lines in compute_composite_score(). Did not manage for now...
-          std::cout<<"here"<<std::endl;
-          // cand.srrtot_float
-          // float srrtot = dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->sigmaRRTot();
-          std::cout<<"here2"<<std::endl;
-          // float meanz = dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->zBarycenter();
-          std::cout<<"here3"<<std::endl;
-          // cand.srrtot_float = srrtot;
-          // cand.meanz_float = meanz;
-          std::cout<<"here4"<<std::endl;
-
-
           candidates.push_back(cand);
       }
     }
@@ -242,15 +226,15 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
     
     if(nCandPerCluster == 0) continue;
 
-    float bdtWP = 10;
-    float minScore = 999;
+    float bdtWP = cfg.myCompIDparams.BDTcut_wp97p5;
+    float maxScore = -999;
     int ibest = -1;
     for(unsigned int icand = 0; icand < nCandPerCluster; icand++) {
       auto &cand = candidates[icand];
       std::vector<EmCaloObjEmu> emcalo_sel = emcalo;
       float score = compute_composite_score(cand, emcalo_sel, track, cfg.myCompIDparams);
-      if((score < bdtWP) && (score < minScore)) {
-        minScore = score;
+      if((score > bdtWP) && (score > maxScore)) {
+        maxScore = score;
         ibest = icand;
       }
     }    
@@ -265,8 +249,12 @@ float PFTkEGAlgoEmulator::compute_composite_score(CompositeCandidate &cand,
                                                   const PFTkEGAlgoEmuConfig::CompIDParameters &params) const {
 
   // Get the cluster/track objects that form the composite candidate
-  auto &calo = emcalo[cand.cluster_idx];
+  const auto &calo = emcalo[cand.cluster_idx];
   const auto &tk = track[cand.track_idx];
+
+  // FIXME: using these two floats crashes code...
+  float srrtot = dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->sigmaRRTot();
+  float meanz = dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->zBarycenter();
 
   // Call and normalize input feature values, then cast to ap_fixed.
   // Note that for some features (e.g. track pT) we call the floating point representation, but that's already quantized!
@@ -283,11 +271,10 @@ float PFTkEGAlgoEmulator::compute_composite_score(CompositeCandidate &cand,
   cand.nstubs = (tk.src->nStubs()-params.tknstubsMin)/(params.tknstubsMax-params.tknstubsMin);
 
   // Run BDT inference
-  // vector<ap_fixed<22,3,AP_RND_CONV,AP_SAT>> inputs = { cand.hoe, cand.tkpt, cand.srrtot, cand.deta, cand.dpt, cand.meanz, cand.dphi, cand.chi2, cand.tkz0, cand.nstubs } ;
-  // auto bdt_score = composite_bdt_->decision_function(inputs);
-  // std::cout<<"BDT score of composite candidate = "<<bdt_score[0]<<std::endl;
-  return 1;
-  // return bdt_score[0];
+  vector<ap_fixed<22,3,AP_RND_CONV,AP_SAT>> inputs = { cand.hoe, cand.tkpt, cand.srrtot, cand.deta, cand.dpt, cand.meanz, cand.dphi, cand.chi2, cand.tkz0, cand.nstubs } ;
+  auto bdt_score = composite_bdt_->decision_function(inputs);
+  std::cout<<"BDT score of composite candidate = "<<bdt_score[0]<<std::endl;
+  return bdt_score[0];
 }
 
 
