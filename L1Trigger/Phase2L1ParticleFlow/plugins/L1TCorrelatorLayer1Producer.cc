@@ -1098,7 +1098,8 @@ void L1TCorrelatorLayer1Producer::putEgObjects(edm::Event &iEvent,
       tkele.setHwQual(egele.hwQual);
       tkele.setPFIsol(egele.floatRelIso(l1ct::EGIsoEleObjEmu::IsoType::PfIso));
       tkele.setEgBinaryWord(egele.pack());
-      tkele.setCompositeBdtScore(egele.bdtScore);
+      tkele.setCompositeBdtScore_highpt(egele.bdtScore_highpt);
+      tkele.setCompositeBdtScore_lowpt(egele.bdtScore_lowpt);
       tkeles->push_back(tkele);
       nele_obj.push_back(tkeles->size() - 1);
     }

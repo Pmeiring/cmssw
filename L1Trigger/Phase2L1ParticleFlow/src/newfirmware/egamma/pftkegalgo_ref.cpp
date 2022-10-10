@@ -52,38 +52,62 @@ l1ct::PFTkEGAlgoEmuConfig::IsoParameters::IsoParameters(const edm::ParameterSet 
                     pset.getParameter<double>("dRMax")) {}
 
 l1ct::PFTkEGAlgoEmuConfig::CompIDParameters::CompIDParameters(const edm::ParameterSet &pset)
-    : CompIDParameters(pset.getParameter<double>("hoeMin"),
-                       pset.getParameter<double>("hoeMax"),
-                       pset.getParameter<double>("tkptMin"),
-                       pset.getParameter<double>("tkptMax"),
-                       pset.getParameter<double>("srrtotMin"),
-                       pset.getParameter<double>("srrtotMax"),
-                       pset.getParameter<double>("detaMin"),
-                       pset.getParameter<double>("detaMax"),
-                       pset.getParameter<double>("dptMin"),
-                       pset.getParameter<double>("dptMax"),
-                       pset.getParameter<double>("meanzMin"),
-                       pset.getParameter<double>("meanzMax"),
-                       pset.getParameter<double>("dphiMin"),
-                       pset.getParameter<double>("dphiMax"),
-                       pset.getParameter<double>("tkchi2Min"),
-                       pset.getParameter<double>("tkchi2Max"),
-                       pset.getParameter<double>("tkz0Min"),
-                       pset.getParameter<double>("tkz0Max"),
-                       pset.getParameter<double>("tknstubsMin"),
-                       pset.getParameter<double>("tknstubsMax"),
-                       pset.getParameter<double>("BDTcut_wp97p5"),
-                       pset.getParameter<double>("BDTcut_wp95p0")) {}
+    : CompIDParameters(pset.getParameter<double>("hoeMin_highpt"),
+                      pset.getParameter<double>("hoeMax_highpt"),
+                      pset.getParameter<double>("tkptMin_highpt"),
+                      pset.getParameter<double>("tkptMax_highpt"),
+                      pset.getParameter<double>("srrtotMin_highpt"),
+                      pset.getParameter<double>("srrtotMax_highpt"),
+                      pset.getParameter<double>("detaMin_highpt"),
+                      pset.getParameter<double>("detaMax_highpt"),
+                      pset.getParameter<double>("dptMin_highpt"),
+                      pset.getParameter<double>("dptMax_highpt"),
+                      pset.getParameter<double>("meanzMin_highpt"),
+                      pset.getParameter<double>("meanzMax_highpt"),
+                      pset.getParameter<double>("dphiMin_highpt"),
+                      pset.getParameter<double>("dphiMax_highpt"),
+                      pset.getParameter<double>("tkchi2Min_highpt"),
+                      pset.getParameter<double>("tkchi2Max_highpt"),
+                      pset.getParameter<double>("tkz0Min_highpt"),
+                      pset.getParameter<double>("tkz0Max_highpt"),
+                      pset.getParameter<double>("tknstubsMin_highpt"),
+                      pset.getParameter<double>("tknstubsMax_highpt"),
+                      pset.getParameter<double>("BDTcut_wp97p5"),
+                      pset.getParameter<double>("BDTcut_wp95p0"),
+                      pset.getParameter<double>("coreShowerLengthMin_lowpt"),
+                      pset.getParameter<double>("coreShowerLengthMax_lowpt"),
+                      pset.getParameter<double>("tkptMin_lowpt"),
+                      pset.getParameter<double>("tkptMax_lowpt"),
+                      pset.getParameter<double>("srrtotMin_lowpt"),
+                      pset.getParameter<double>("srrtotMax_lowpt"),
+                      pset.getParameter<double>("detaMin_lowpt"),
+                      pset.getParameter<double>("detaMax_lowpt"),
+                      pset.getParameter<double>("dptMin_lowpt"),
+                      pset.getParameter<double>("dptMax_lowpt"),
+                      pset.getParameter<double>("meanzMin_lowpt"),
+                      pset.getParameter<double>("meanzMax_lowpt"),
+                      pset.getParameter<double>("dphiMin_lowpt"),
+                      pset.getParameter<double>("dphiMax_lowpt"),
+                      pset.getParameter<double>("tkchi2Min_lowpt"),
+                      pset.getParameter<double>("tkchi2Max_lowpt"),
+                      pset.getParameter<double>("tkz0Min_lowpt"),
+                      pset.getParameter<double>("tkz0Max_lowpt"),
+                      pset.getParameter<double>("tknstubsMin_lowpt"),
+                      pset.getParameter<double>("tknstubsMax_lowpt")) {}
 
 #endif
 
 PFTkEGAlgoEmulator::PFTkEGAlgoEmulator(const PFTkEGAlgoEmuConfig &config) : cfg(config), 
-composite_bdt_(nullptr), 
+composite_bdt_highpt_(nullptr),
+composite_bdt_lowpt_(nullptr),
 debug_(cfg.debug) {
   if(cfg.doCompositeTkEle) {
     //FIXME: make the name of the file configurable
-    auto resolvedFileName = edm::FileInPath("L1Trigger/Phase2L1ParticleFlow/data/compositeID.json").fullPath();
-    composite_bdt_ = std::make_unique<conifer::BDT<ap_fixed<22,3,AP_RND_CONV,AP_SAT>,ap_fixed<22,3,AP_RND_CONV,AP_SAT>,0>> (resolvedFileName);
+    auto resolvedFileName_highpt = edm::FileInPath("L1Trigger/Phase2L1ParticleFlow/data/compositeID_depth4.json").fullPath();
+    composite_bdt_highpt_ = std::make_unique<conifer::BDT<ap_fixed<22,3,AP_RND_CONV,AP_SAT>,ap_fixed<22,3,AP_RND_CONV,AP_SAT>,0>> (resolvedFileName_highpt);
+
+    auto resolvedFileName_lowpt = edm::FileInPath("L1Trigger/Phase2L1ParticleFlow/data/compositeID_depth4_lowpt.json").fullPath();
+    composite_bdt_lowpt_ = std::make_unique<conifer::BDT<ap_fixed<22,3,AP_RND_CONV,AP_SAT>,ap_fixed<22,3,AP_RND_CONV,AP_SAT>,0>> (resolvedFileName_lowpt);
   }
 }
 
@@ -189,8 +213,9 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_elliptic(const PFRegionEmu &r,
 void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
                                         const std::vector<EmCaloObjEmu> &emcalo,
                                         const std::vector<TkObjEmu> &track,
-                                        std::vector<int> &emCalo2tk, 
-                                        std::vector<float> &emCaloTkBdtScore) const {
+                                        std::vector<int> &emCalo2tk,
+                                        std::vector<float> &emCaloTkBdtScore_highpt,
+                                        std::vector<float> &emCaloTkBdtScore_lowpt) const {
   //FIXME: should be configurable
   const int nCAND_PER_CLUSTER = 4;
   unsigned int nTrackMax = std::min<unsigned>(track.size(), cfg.nTRACK_EGIN);
@@ -222,32 +247,44 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
               [](const CompositeCandidate & a, const CompositeCandidate & b) -> bool
                 { return a.dpt < b.dpt; });
     unsigned int nCandPerCluster = std::min<unsigned int>(candidates.size(), nCAND_PER_CLUSTER);
-    std::cout << "# composit candidates: " << nCandPerCluster << std::endl;
+    std::cout << "# composite candidates: " << nCandPerCluster << std::endl;
     if(nCandPerCluster == 0) continue;
 
     float bdtWP_MVA = cfg.myCompIDparams.BDTcut_wp97p5;
     float bdtWP_XGB = 1. / (1. + std::sqrt((1. - bdtWP_MVA) / (1. + bdtWP_MVA))); // Convert WP value from ROOT.TMVA to XGboost
-    float maxScore = -999;
+    float maxScore_highpT = -999;
+    float maxScore_lowpT = -999;
     int ibest = -1;
     for(unsigned int icand = 0; icand < nCandPerCluster; icand++) {
       auto &cand = candidates[icand];
       std::vector<EmCaloObjEmu> emcalo_sel = emcalo;
-      float score = compute_composite_score(cand, emcalo_sel, track, cfg.myCompIDparams);
-      if(score > maxScore) {
-      // if((score > bdtWP_XGB) && (score > maxScore)) {
-        maxScore = score;
+
+      // Store the low and high pt scores only for the best candidate (i.e. with the highest high pt score)?
+
+      float score_highpt = compute_composite_score_highpt(cand, emcalo_sel, track, cfg.myCompIDparams);
+      if(score_highpt > maxScore_highpT) {
+      // if((score_highpt > bdtWP_XGB) && (score_highpt > maxScore_highpT)) {
+        maxScore_highpT = score_highpt;
         ibest = icand;
       }
+
+      float score_lowpt = compute_composite_score_lowpt(cand, emcalo_sel, track, cfg.myCompIDparams);
+      if(score_lowpt > maxScore_lowpT) {
+        maxScore_lowpT = score_lowpt;
+      }
+
+
     }
     if(ibest != -1) {
       emCalo2tk[ic] = candidates[ibest].track_idx;
-      emCaloTkBdtScore[ic] = maxScore;
+      emCaloTkBdtScore_highpt[ic] = maxScore_highpT;
+      emCaloTkBdtScore_lowpt[ic] = maxScore_lowpT;
     }
   }
 }
 
 
-float PFTkEGAlgoEmulator::compute_composite_score(CompositeCandidate &cand,
+float PFTkEGAlgoEmulator::compute_composite_score_highpt(CompositeCandidate &cand,
                                                   const std::vector<EmCaloObjEmu> &emcalo,
                                                   const std::vector<TkObjEmu> &track,
                                                   const PFTkEGAlgoEmuConfig::CompIDParameters &params) const {
@@ -255,38 +292,75 @@ float PFTkEGAlgoEmulator::compute_composite_score(CompositeCandidate &cand,
   const auto &calo = emcalo[cand.cluster_idx];
   const auto &tk = track[cand.track_idx];
 
-  // FIXME: using these two floats crashes code...
+  // Call and normalize input feature values, then cast to ap_fixed.
+  // Note that for some features (e.g. track pT) we call the floating point representation, but that's already quantized!
+  // Several other features, such as chi2 or most cluster features, are not quantized before casting them to ap_fixed.
   float srrtot_f = dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->sigmaRRTot();
   float meanz_f = abs(dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->zBarycenter());
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> hoe = (calo.src->hOverE()-params.hoeMin_highpt)/(params.hoeMax_highpt-params.hoeMin_highpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> tkpt = (tk.floatPt()-params.tkptMin_highpt)/(params.tkptMax_highpt-params.tkptMin_highpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> srrtot = (srrtot_f-params.srrtotMin_highpt)/(params.srrtotMax_highpt-params.srrtotMin_highpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> deta = (tk.floatVtxEta() - calo.floatEta()-params.detaMin_highpt)/(params.detaMax_highpt-params.detaMin_highpt);
+  // FIXME: do we really need dpt to be a ratio?
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> dpt = ((tk.floatPt()/calo.floatPt())-params.dptMin_highpt)/(params.dptMax_highpt-params.dptMin_highpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> meanz = (meanz_f-params.meanzMin_highpt)/(params.meanzMax_highpt-params.meanzMin_highpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> dphi = (deltaPhi(tk.floatVtxPhi(), calo.floatPhi()) -params.dphiMin_highpt)/(params.dphiMax_highpt-params.dphiMin_highpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> chi2 = (tk.src->chi2()-params.tkchi2Min_highpt)/(params.tkchi2Max_highpt-params.tkchi2Min_highpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> tkz0 = (tk.floatZ0()-params.tkz0Min_highpt)/(params.tkz0Max_highpt-params.tkz0Min_highpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> nstubs = (tk.src->nStubs()-params.tknstubsMin_highpt)/(params.tknstubsMax_highpt-params.tknstubsMin_highpt);
+
+  // Run BDT inference
+  vector<ap_fixed<22,3,AP_RND_CONV,AP_SAT>> inputs = { hoe, tkpt, srrtot, deta, dpt, meanz, dphi, chi2, tkz0, nstubs } ;
+  auto bdt_score = composite_bdt_highpt_->decision_function(inputs);
+
+  float bdt_score_CON = bdt_score[0];
+  float bdt_score_XGB = 1/(1+exp(-bdt_score_CON)); // Map Conifer score to XGboost score. (same as scipy.expit)
+
+  // std::cout<<"BDT score of composite candidate = "<<bdt_score_XGB<<std::endl;
+  return bdt_score_XGB;
+}
+
+float PFTkEGAlgoEmulator::compute_composite_score_lowpt(CompositeCandidate &cand,
+                                                  const std::vector<EmCaloObjEmu> &emcalo,
+                                                  const std::vector<TkObjEmu> &track,
+                                                  const PFTkEGAlgoEmuConfig::CompIDParameters &params) const {
+  // Get the cluster/track objects that form the composite candidate
+  const auto &calo = emcalo[cand.cluster_idx];
+  const auto &tk = track[cand.track_idx];
 
   // Call and normalize input feature values, then cast to ap_fixed.
   // Note that for some features (e.g. track pT) we call the floating point representation, but that's already quantized!
   // Several other features, such as chi2 or most cluster features, are not quantized before casting them to ap_fixed.
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> hoe = (calo.src->hOverE()-params.hoeMin)/(params.hoeMax-params.hoeMin);
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> tkpt = (tk.floatPt()-params.tkptMin)/(params.tkptMax-params.tkptMin);
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> srrtot = (srrtot_f-params.srrtotMin)/(params.srrtotMax-params.srrtotMin);
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> deta = (tk.floatEta() - calo.floatEta()-params.detaMin)/(params.detaMax-params.detaMin);
+  float srrtot_f = dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->sigmaRRTot();
+  float meanz_f = abs(dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->zBarycenter());
+  float coreshowerlength_f = abs(dynamic_cast<const l1t::HGCalMulticluster*>(calo.src->constituentsAndFractions()[0].first.get())->coreShowerLength());
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> coreshowerlength = (coreshowerlength_f-params.coreShowerLengthMin_lowpt)/(params.coreShowerLengthMax_lowpt-params.coreShowerLengthMin_lowpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> tkpt = (tk.floatPt()-params.tkptMin_lowpt)/(params.tkptMax_lowpt-params.tkptMin_lowpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> srrtot = (srrtot_f-params.srrtotMin_lowpt)/(params.srrtotMax_lowpt-params.srrtotMin_lowpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> deta = (tk.floatVtxEta() - calo.floatEta()-params.detaMin_lowpt)/(params.detaMax_lowpt-params.detaMin_lowpt);
   // FIXME: do we really need dpt to be a ratio?
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> dpt = ((tk.floatPt()/calo.floatPt())-params.dptMin)/(params.dptMax-params.dptMin);
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> meanz = (meanz_f-params.meanzMin)/(params.meanzMax-params.meanzMin);
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> dphi = (deltaPhi(tk.floatPhi(), calo.floatPhi()) -params.dphiMin)/(params.dphiMax-params.dphiMin);
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> chi2 = (tk.src->chi2()-params.tkchi2Min)/(params.tkchi2Max-params.tkchi2Min);
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> tkz0 = (tk.floatZ0()-params.tkz0Min)/(params.tkz0Max-params.tkz0Min);
-  ap_fixed<22,3,AP_RND_CONV,AP_SAT> nstubs = (tk.src->nStubs()-params.tknstubsMin)/(params.tknstubsMax-params.tknstubsMin);
-  // std::cout<<"hoe\t"<<calo.src->hOverE()<<"\t"<<(calo.src->hOverE()-params.hoeMin)/(params.hoeMax-params.hoeMin)<<std::endl;
-  // std::cout<<"tkpt\t"<<tk.floatPt()<<"\t"<<(tk.floatPt()-params.tkptMin)/(params.tkptMax-params.tkptMin)<<std::endl;
-  // std::cout<<"srrtot\t"<<srrtot<<"\t"<<(srrtot-params.srrtotMin)/(params.srrtotMax-params.srrtotMin)<<std::endl;
-  // std::cout<<"deta\t"<<tk.floatEta()-calo.floatEta()<<"\t"<<(tk.floatEta()-calo.floatEta()-params.detaMin)/(params.detaMax-params.detaMin)<<std::endl;
-  // std::cout<<"dpt\t"<<tk.floatPt()/calo.floatPt()<<"\t"<<((tk.floatPt()/calo.floatPt())-params.dptMin)/(params.dptMax-params.dptMin)<<std::endl;
-  // std::cout<<"meanz\t"<<meanz<<"\t"<<(meanz-params.meanzMin)/(params.meanzMax-params.meanzMin)<<std::endl;
-  // std::cout<<"dphi\t"<<deltaPhi(tk.floatPhi(), calo.floatPhi())<<"\t"<<(deltaPhi(tk.floatPhi(), calo.floatPhi()) -params.dphiMin)/(params.dphiMax-params.dphiMin)<<std::endl;
-  // std::cout<<"chi2\t"<<tk.src->chi2()<<"\t"<<(tk.src->chi2()-params.tkchi2Min)/(params.tkchi2Max-params.tkchi2Min)<<std::endl;
-  // std::cout<<"tkz0\t"<<tk.floatZ0()<<"\t"<<(tk.floatZ0()-params.tkz0Min)/(params.tkz0Max-params.tkz0Min)<<std::endl;
-  // std::cout<<"nstubs\t"<<tk.src->nStubs()<<"\t"<<(tk.src->nStubs()-params.tknstubsMin)/(params.tknstubsMax-params.tknstubsMin)<<std::endl;
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> dpt = ((tk.floatPt()/calo.floatPt())-params.dptMin_lowpt)/(params.dptMax_lowpt-params.dptMin_lowpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> meanz = (meanz_f-params.meanzMin_lowpt)/(params.meanzMax_lowpt-params.meanzMin_lowpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> dphi = (deltaPhi(tk.floatVtxPhi(), calo.floatPhi()) -params.dphiMin_lowpt)/(params.dphiMax_lowpt-params.dphiMin_lowpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> chi2 = (tk.src->chi2()-params.tkchi2Min_lowpt)/(params.tkchi2Max_lowpt-params.tkchi2Min_lowpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> tkz0 = (tk.floatZ0()-params.tkz0Min_lowpt)/(params.tkz0Max_lowpt-params.tkz0Min_lowpt);
+  ap_fixed<22,3,AP_RND_CONV,AP_SAT> nstubs = (tk.src->nStubs()-params.tknstubsMin_lowpt)/(params.tknstubsMax_lowpt-params.tknstubsMin_lowpt);
+
+  // std::cout<<"coreshowerlength\t"<<coreshowerlength_f<<"\t"<<(coreshowerlength_f-params.coreShowerLengthMin_lowpt)/(params.coreShowerLengthMax_lowpt-params.coreShowerLengthMin_lowpt)<<std::endl;
+  // std::cout<<"tkpt\t"<<tk.floatPt()<<"\t"<<(tk.floatPt()-params.tkptMin_lowpt)/(params.tkptMax_lowpt-params.tkptMin_lowpt)<<std::endl;
+  // std::cout<<"srrtot\t"<<srrtot_f<<"\t"<<(srrtot_f-params.srrtotMin_lowpt)/(params.srrtotMax_lowpt-params.srrtotMin_lowpt)<<std::endl;
+  // std::cout<<"deta\t"<<tk.floatEta()-calo.floatEta()<<"\t"<<(tk.floatEta()-calo.floatEta()-params.detaMin_lowpt)/(params.detaMax_lowpt-params.detaMin_lowpt)<<std::endl;
+  // std::cout<<"dpt\t"<<tk.floatPt()/calo.floatPt()<<"\t"<<((tk.floatPt()/calo.floatPt())-params.dptMin_lowpt)/(params.dptMax_lowpt-params.dptMin_lowpt)<<std::endl;
+  // std::cout<<"meanz\t"<<meanz_f<<"\t"<<(meanz_f-params.meanzMin_lowpt)/(params.meanzMax_lowpt-params.meanzMin_lowpt)<<std::endl;
+  // std::cout<<"dphi\t"<<deltaPhi(tk.floatPhi(), calo.floatPhi())<<"\t"<<(deltaPhi(tk.floatPhi(), calo.floatPhi()) -params.dphiMin_lowpt)/(params.dphiMax_lowpt-params.dphiMin_lowpt)<<std::endl;
+  // std::cout<<"chi2\t"<<tk.src->chi2()<<"\t"<<(tk.src->chi2()-params.tkchi2Min_lowpt)/(params.tkchi2Max_lowpt-params.tkchi2Min_lowpt)<<std::endl;
+  // std::cout<<"tkz0\t"<<tk.floatZ0()<<"\t"<<(tk.floatZ0()-params.tkz0Min_lowpt)/(params.tkz0Max_lowpt-params.tkz0Min_lowpt)<<std::endl;
+  // std::cout<<"nstubs\t"<<tk.src->nStubs()<<"\t"<<(tk.src->nStubs()-params.tknstubsMin_lowpt)/(params.tknstubsMax_lowpt-params.tknstubsMin_lowpt)<<std::endl;
+
 
   // Run BDT inference
-  vector<ap_fixed<22,3,AP_RND_CONV,AP_SAT>> inputs = { hoe, tkpt, srrtot, deta, dpt, meanz, dphi, chi2, tkz0, nstubs } ;
-  auto bdt_score = composite_bdt_->decision_function(inputs);
+  vector<ap_fixed<22,3,AP_RND_CONV,AP_SAT>> inputs = { coreshowerlength, tkpt, srrtot, deta, dpt, meanz, dphi, chi2, tkz0, nstubs } ;
+  auto bdt_score = composite_bdt_lowpt_->decision_function(inputs);
 
   float bdt_score_CON = bdt_score[0];
   float bdt_score_XGB = 1/(1+exp(-bdt_score_CON)); // Map Conifer score to XGboost score. (same as scipy.expit)
@@ -333,10 +407,11 @@ void PFTkEGAlgoEmulator::run(const PFInputRegion &in, OutputRegion &out) const {
     link_emCalo2emCalo(emcalo_sel, emCalo2emCalo);
 
   std::vector<int> emCalo2tk(emcalo_sel.size(), -1);
-  std::vector<float> emCaloTkBdtScore(emcalo_sel.size(), -999);
+  std::vector<float> emCaloTkBdtScore_highpt(emcalo_sel.size(), -999);
+  std::vector<float> emCaloTkBdtScore_lowpt(emcalo_sel.size(), -999);
 
   if(cfg.doCompositeTkEle) {
-    link_emCalo2tk_composite(in.region, emcalo_sel, in.track, emCalo2tk, emCaloTkBdtScore);
+    link_emCalo2tk_composite(in.region, emcalo_sel, in.track, emCalo2tk, emCaloTkBdtScore_highpt, emCaloTkBdtScore_lowpt);
   } else {
     link_emCalo2tk_elliptic(in.region, emcalo_sel, in.track, emCalo2tk);
   }
@@ -344,7 +419,7 @@ void PFTkEGAlgoEmulator::run(const PFInputRegion &in, OutputRegion &out) const {
   out.egsta.clear();
   std::vector<EGIsoObjEmu> egobjs;
   std::vector<EGIsoEleObjEmu> egeleobjs;
-  eg_algo(in.region, emcalo_sel, in.track, emCalo2emCalo, emCalo2tk, emCaloTkBdtScore, out.egsta, egobjs, egeleobjs);
+  eg_algo(in.region, emcalo_sel, in.track, emCalo2emCalo, emCalo2tk, emCaloTkBdtScore_highpt, emCaloTkBdtScore_lowpt, out.egsta, egobjs, egeleobjs);
 
   unsigned int nEGOut = std::min<unsigned>(cfg.nEM_EGOUT, egobjs.size());
   unsigned int nEGEleOut = std::min<unsigned>(cfg.nEM_EGOUT, egeleobjs.size());
@@ -361,7 +436,8 @@ void PFTkEGAlgoEmulator::eg_algo(const PFRegionEmu &region,
                                  const std::vector<TkObjEmu> &track,
                                  const std::vector<int> &emCalo2emCalo,
                                  const std::vector<int> &emCalo2tk,
-                                 const std::vector<float> &emCaloTkBdtScore,
+                                 const std::vector<float> &emCaloTkBdtScore_highpt,
+                                 const std::vector<float> &emCaloTkBdtScore_lowpt,
                                  std::vector<EGObjEmu> &egstas,
                                  std::vector<EGIsoObjEmu> &egobjs,
                                  std::vector<EGIsoEleObjEmu> &egeleobjs) const {
@@ -377,7 +453,8 @@ void PFTkEGAlgoEmulator::eg_algo(const PFRegionEmu &region,
                 << " phi " << calo.hwPhi << std::endl;
 
     int itk = emCalo2tk[ic];
-    float bdt = emCaloTkBdtScore[ic];
+    float bdt_highpt = emCaloTkBdtScore_highpt[ic];
+    float bdt_lowpt = emCaloTkBdtScore_lowpt[ic];
 
     // check if brem recovery is on
     if (!cfg.doBremRecovery || cfg.writeBeforeBremRecovery) {
@@ -390,7 +467,7 @@ void PFTkEGAlgoEmulator::eg_algo(const PFRegionEmu &region,
         egQual = calo.hwEmID | 0x8;
       }
 
-      addEgObjsToPF(egstas, egobjs, egeleobjs, emcalo, track, ic, egQual, calo.hwPt, itk, bdt);
+      addEgObjsToPF(egstas, egobjs, egeleobjs, emcalo, track, ic, egQual, calo.hwPt, itk, bdt_highpt, bdt_lowpt);
     }
 
     if (!cfg.doBremRecovery)
@@ -413,7 +490,7 @@ void PFTkEGAlgoEmulator::eg_algo(const PFRegionEmu &region,
 
     // 2. create EG objects with brem recovery
     // NOTE: duplicating the object is suboptimal but this is done for keeping things as in TDR code...
-    addEgObjsToPF(egstas, egobjs, egeleobjs, emcalo, track, ic, calo.hwEmID, ptBremReco, itk, bdt, components);
+    addEgObjsToPF(egstas, egobjs, egeleobjs, emcalo, track, ic, calo.hwEmID, ptBremReco, itk, bdt_highpt, bdt_lowpt, components);
   }
 }
 
@@ -468,7 +545,8 @@ EGIsoEleObjEmu &PFTkEGAlgoEmulator::addEGIsoEleToPF(std::vector<EGIsoEleObjEmu> 
                                                     const TkObjEmu &track,
                                                     const unsigned int hwQual,
                                                     const pt_t ptCorr,
-                                                    const float bdtScore) const {
+                                                    const float bdtScore_highpt,
+                                                    const float bdtScore_lowpt) const {
   EGIsoEleObjEmu egiso;
   egiso.clear();
   egiso.hwPt = ptCorr;
@@ -487,7 +565,8 @@ EGIsoEleObjEmu &PFTkEGAlgoEmulator::addEGIsoEleToPF(std::vector<EGIsoEleObjEmu> 
   egiso.hwCharge = track.hwCharge;
   egiso.srcCluster = calo.src;
   egiso.srcTrack = track.src;
-  egiso.bdtScore = bdtScore;
+  egiso.bdtScore_highpt = bdtScore_highpt;
+  egiso.bdtScore_lowpt = bdtScore_lowpt;
   egobjs.push_back(egiso);
 
   if (debug_ > 2)
@@ -506,7 +585,8 @@ void PFTkEGAlgoEmulator::addEgObjsToPF(std::vector<EGObjEmu> &egstas,
                                        const unsigned int hwQual,
                                        const pt_t ptCorr,
                                        const int tk_idx,
-                                       const float bdtScore,
+                                       const float bdtScore_highpt,
+                                       const float bdtScore_lowpt,
                                        const std::vector<unsigned int> &components) const {
   int sta_idx = -1;
   if (writeEgSta()) {
@@ -516,7 +596,7 @@ void PFTkEGAlgoEmulator::addEgObjsToPF(std::vector<EGObjEmu> &egstas,
   EGIsoObjEmu &egobj = addEGIsoToPF(egobjs, emcalo[calo_idx], hwQual, ptCorr);
   egobj.sta_idx = sta_idx;
   if (tk_idx != -1) {
-    EGIsoEleObjEmu &eleobj = addEGIsoEleToPF(egeleobjs, emcalo[calo_idx], track[tk_idx], hwQual, ptCorr, bdtScore);
+    EGIsoEleObjEmu &eleobj = addEGIsoEleToPF(egeleobjs, emcalo[calo_idx], track[tk_idx], hwQual, ptCorr, bdtScore_highpt, bdtScore_lowpt);
     eleobj.sta_idx = sta_idx;
   }
 }

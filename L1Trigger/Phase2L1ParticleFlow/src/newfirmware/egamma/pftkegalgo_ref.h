@@ -58,40 +58,50 @@ namespace l1ct {
     bool doCompositeTkEle;
     struct CompIDParameters {
       CompIDParameters(const edm::ParameterSet &);
-      CompIDParameters(double hoeMin, double hoeMax, double tkptMin, double tkptMax, double srrtotMin, double srrtotMax, double detaMin, double detaMax, double dptMin, double dptMax, double meanzMin, double meanzMax, double dphiMin, double dphiMax, double tkchi2Min, double tkchi2Max, double tkz0Min, double tkz0Max, double tknstubsMin, double tknstubsMax, double BDTcut_wp97p5, double BDTcut_wp95p0)
-          : hoeMin(hoeMin), hoeMax(hoeMax),
-            tkptMin(tkptMin),tkptMax(tkptMax),
-            srrtotMin(srrtotMin),srrtotMax(srrtotMax),
-            detaMin(detaMin),detaMax(detaMax),
-            dptMin(dptMin),dptMax(dptMax),
-            meanzMin(meanzMin),meanzMax(meanzMax),
-            dphiMin(dphiMin),dphiMax(dphiMax),
-            tkchi2Min(tkchi2Min),tkchi2Max(tkchi2Max),
-            tkz0Min(tkz0Min),tkz0Max(tkz0Max),
-            tknstubsMin(tknstubsMin),tknstubsMax(tknstubsMax),
-            BDTcut_wp97p5(BDTcut_wp97p5),BDTcut_wp95p0(BDTcut_wp95p0){}
-      double hoeMin;
-      double hoeMax;
-      double tkptMin;
-      double tkptMax;
-      double srrtotMin;
-      double srrtotMax;
-      double detaMin;
-      double detaMax;
-      double dptMin;
-      double dptMax;
-      double meanzMin;
-      double meanzMax;
-      double dphiMin;
-      double dphiMax;
-      double tkchi2Min;
-      double tkchi2Max;
-      double tkz0Min;
-      double tkz0Max;
-      double tknstubsMin;
-      double tknstubsMax;
-      double BDTcut_wp97p5;
-      double BDTcut_wp95p0;
+      CompIDParameters(double hoeMin_highpt, double hoeMax_highpt, double tkptMin_highpt, double tkptMax_highpt, double srrtotMin_highpt, double srrtotMax_highpt, double detaMin_highpt, double detaMax_highpt, double dptMin_highpt, double dptMax_highpt, double meanzMin_highpt, double meanzMax_highpt, double dphiMin_highpt, double dphiMax_highpt, double tkchi2Min_highpt, double tkchi2Max_highpt, double tkz0Min_highpt, double tkz0Max_highpt, double tknstubsMin_highpt, double tknstubsMax_highpt, double BDTcut_wp97p5, double BDTcut_wp95p0,
+                       double coreShowerLengthMin_lowpt, double coreShowerLengthMax_lowpt, double tkptMin_lowpt, double tkptMax_lowpt, double srrtotMin_lowpt, double srrtotMax_lowpt, double detaMin_lowpt, double detaMax_lowpt, double dptMin_lowpt, double dptMax_lowpt, double meanzMin_lowpt, double meanzMax_lowpt, double dphiMin_lowpt, double dphiMax_lowpt, double tkchi2Min_lowpt, double tkchi2Max_lowpt, double tkz0Min_lowpt, double tkz0Max_lowpt, double tknstubsMin_lowpt, double tknstubsMax_lowpt)
+          : hoeMin_highpt(hoeMin_highpt),           hoeMax_highpt(hoeMax_highpt),
+            tkptMin_highpt(tkptMin_highpt),         tkptMax_highpt(tkptMax_highpt),
+            srrtotMin_highpt(srrtotMin_highpt),     srrtotMax_highpt(srrtotMax_highpt),
+            detaMin_highpt(detaMin_highpt),         detaMax_highpt(detaMax_highpt),
+            dptMin_highpt(dptMin_highpt),           dptMax_highpt(dptMax_highpt),
+            meanzMin_highpt(meanzMin_highpt),       meanzMax_highpt(meanzMax_highpt),
+            dphiMin_highpt(dphiMin_highpt),         dphiMax_highpt(dphiMax_highpt),
+            tkchi2Min_highpt(tkchi2Min_highpt),     tkchi2Max_highpt(tkchi2Max_highpt),
+            tkz0Min_highpt(tkz0Min_highpt),         tkz0Max_highpt(tkz0Max_highpt),
+            tknstubsMin_highpt(tknstubsMin_highpt), tknstubsMax_highpt(tknstubsMax_highpt),
+            BDTcut_wp97p5(BDTcut_wp97p5),           BDTcut_wp95p0(BDTcut_wp95p0),
+            coreShowerLengthMin_lowpt(coreShowerLengthMin_lowpt),coreShowerLengthMax_lowpt(coreShowerLengthMax_lowpt),
+            tkptMin_lowpt(tkptMin_lowpt),           tkptMax_lowpt(tkptMax_lowpt),
+            srrtotMin_lowpt(srrtotMin_lowpt),       srrtotMax_lowpt(srrtotMax_lowpt),
+            detaMin_lowpt(detaMin_lowpt),           detaMax_lowpt(detaMax_lowpt),
+            dptMin_lowpt(dptMin_lowpt),             dptMax_lowpt(dptMax_lowpt),
+            meanzMin_lowpt(meanzMin_lowpt),         meanzMax_lowpt(meanzMax_lowpt),
+            dphiMin_lowpt(dphiMin_lowpt),           dphiMax_lowpt(dphiMax_lowpt),
+            tkchi2Min_lowpt(tkchi2Min_lowpt),       tkchi2Max_lowpt(tkchi2Max_lowpt),
+            tkz0Min_lowpt(tkz0Min_lowpt),           tkz0Max_lowpt(tkz0Max_lowpt),
+            tknstubsMin_lowpt(tknstubsMin_lowpt),   tknstubsMax_lowpt(tknstubsMax_lowpt){}
+      double hoeMin_highpt, hoeMax_highpt; // Parameters for the high pT model
+      double tkptMin_highpt, tkptMax_highpt;
+      double srrtotMin_highpt, srrtotMax_highpt;
+      double detaMin_highpt, detaMax_highpt;
+      double dptMin_highpt, dptMax_highpt;
+      double meanzMin_highpt, meanzMax_highpt;
+      double dphiMin_highpt, dphiMax_highpt;
+      double tkchi2Min_highpt, tkchi2Max_highpt;
+      double tkz0Min_highpt, tkz0Max_highpt;
+      double tknstubsMin_highpt, tknstubsMax_highpt;
+      double BDTcut_wp97p5, BDTcut_wp95p0;
+      double coreShowerLengthMin_lowpt, coreShowerLengthMax_lowpt;  // Similar for the low pT model
+      double tkptMin_lowpt, tkptMax_lowpt;
+      double srrtotMin_lowpt, srrtotMax_lowpt;
+      double detaMin_lowpt, detaMax_lowpt;
+      double dptMin_lowpt, dptMax_lowpt;
+      double meanzMin_lowpt, meanzMax_lowpt;
+      double dphiMin_lowpt, dphiMax_lowpt;
+      double tkchi2Min_lowpt, tkchi2Max_lowpt;
+      double tkz0Min_lowpt, tkz0Max_lowpt;
+      double tknstubsMin_lowpt, tknstubsMax_lowpt;
     };
 
     CompIDParameters myCompIDparams;
@@ -125,7 +135,8 @@ namespace l1ct {
                         EGIsoEleObjEmu::IsoType hwIsoTypeTkEle = EGIsoEleObjEmu::IsoType::TkIso,
                         EGIsoObjEmu::IsoType hwIsoTypeTkEm = EGIsoObjEmu::IsoType::TkIsoPV,
                         bool doCompositeTkEle = false,
-                        const CompIDParameters &myCompIDparams = {-1.0, 1566.547607421875, 1.9501149654388428, 11102.0048828125, 0.0, 0.01274710614234209, -0.24224889278411865, 0.23079538345336914, 0.010325592942535877, 184.92538452148438, 325.0653991699219, 499.6089782714844, -6.281332015991211, 6.280326843261719, 0.024048099294304848, 1258.37158203125, -14.94140625, 14.94140625, 4.0, 6.0, 0.5406244, 0.9693441},
+                        const CompIDParameters &myCompIDparams = {-1.0, 1566.547607421875, 1.9501149654388428, 11102.0048828125, 0.0, 0.01274710614234209, -0.24224889278411865, 0.23079538345336914, 0.010325592942535877, 184.92538452148438, 325.0653991699219, 499.6089782714844, -6.281332015991211, 6.280326843261719, 0.024048099294304848, 1258.37158203125, -14.94140625, 14.94140625, 4.0, 6.0, 0.5406244, 0.9693441,
+                                                                  1.0, 26.0, 1.9501149654388428, 11102.0048828125, 0.0, 0.013055052608251572, -0.24158358573913574, 0.2402184009552002, 0.07829763740301132, 1558.2740478515625, 322.10272216796875, 504.7358093261719, -6.280882835388184, 6.28144645690918, 0.00784884113818407, 1252.6024169921875, -14.94140625, 14.94140625, 4.0, 6.0},
                         int debug = 0)
 
         : nTRACK(nTrack),
@@ -198,7 +209,8 @@ namespace l1ct {
                                 const std::vector<EmCaloObjEmu> &emcalo,
                                 const std::vector<TkObjEmu> &track,
                                 std::vector<int> &emCalo2tk,
-                                std::vector<float> &emCaloTkBdtScore) const;
+                                std::vector<float> &emCaloTkBdtScore_highpt,
+                                std::vector<float> &emCaloTkBdtScore_lowpt) const;
 
     struct CompositeCandidate {
       unsigned int cluster_idx;
@@ -206,7 +218,12 @@ namespace l1ct {
       double dpt; // For sorting
     };
 
-    float compute_composite_score(CompositeCandidate &cand,
+    float compute_composite_score_highpt(CompositeCandidate &cand,
+                                  const std::vector<EmCaloObjEmu> &emcalo,
+                                  const std::vector<TkObjEmu> &track,
+                                  const PFTkEGAlgoEmuConfig::CompIDParameters &params) const;
+
+    float compute_composite_score_lowpt(CompositeCandidate &cand,
                                   const std::vector<EmCaloObjEmu> &emcalo,
                                   const std::vector<TkObjEmu> &track,
                                   const PFTkEGAlgoEmuConfig::CompIDParameters &params) const;
@@ -223,7 +240,8 @@ namespace l1ct {
                  const std::vector<TkObjEmu> &track,
                  const std::vector<int> &emCalo2emCalo,
                  const std::vector<int> &emCalo2tk,
-                 const std::vector<float> &emCaloTkBdtScore,
+                 const std::vector<float>&emCaloTkBdtScore_highpt,
+                 const std::vector<float>&emCaloTkBdtScore_lowpt,
                  std::vector<EGObjEmu> &egstas,
                  std::vector<EGIsoObjEmu> &egobjs,
                  std::vector<EGIsoEleObjEmu> &egeleobjs) const;
@@ -237,7 +255,8 @@ namespace l1ct {
                        const unsigned int hwQual,
                        const pt_t ptCorr,
                        const int tk_idx,
-                       const float bdtScore,
+                       const float bdtScore_highpt,
+                       const float bdtScore_lowpt,
                        const std::vector<unsigned int> &components = {}) const;
 
     EGObjEmu &addEGStaToPF(std::vector<EGObjEmu> &egobjs,
@@ -256,7 +275,8 @@ namespace l1ct {
                                     const TkObjEmu &track,
                                     const unsigned int hwQual,
                                     const pt_t ptCorr,
-                                    const float bdtScore) const;
+                                    const float bdtScore_highpt,
+                                    const float bdtScore_lowpt) const;
 
     // FIXME: reimplemented from PFAlgoEmulatorBase
     template <typename T>
@@ -387,7 +407,8 @@ namespace l1ct {
                            z0_t z0) const;
 
     PFTkEGAlgoEmuConfig cfg;
-    std::unique_ptr<conifer::BDT<ap_fixed<22,3,AP_RND_CONV,AP_SAT>,ap_fixed<22,3,AP_RND_CONV,AP_SAT>,0>> composite_bdt_;
+    std::unique_ptr<conifer::BDT<ap_fixed<22,3,AP_RND_CONV,AP_SAT>,ap_fixed<22,3,AP_RND_CONV,AP_SAT>,0>> composite_bdt_highpt_;
+    std::unique_ptr<conifer::BDT<ap_fixed<22,3,AP_RND_CONV,AP_SAT>,ap_fixed<22,3,AP_RND_CONV,AP_SAT>,0>> composite_bdt_lowpt_;
     int debug_;
   };
 }  // namespace l1ct
