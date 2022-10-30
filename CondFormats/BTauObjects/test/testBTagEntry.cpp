@@ -10,7 +10,7 @@ int main()
 {
   using namespace std;
 
-  auto par1 = BTagEntry::Parameters(BTagEntry::OP_TIGHT, "CoMb", "cEnTrAl_");
+  auto par1 = BTagEntry::Parameters("T", "CoMb", "cEnTrAl_");
   assert (par1.measurementType == std::string("comb"));
   assert (par1.sysType == string("central_"));
 
@@ -22,7 +22,7 @@ int main()
   f1.SetParameter(0, 2);
   auto b2 = BTagEntry(
     &f1,
-    BTagEntry::Parameters(BTagEntry::OP_TIGHT, "comb", "up", BTagEntry::FLAV_C)
+    BTagEntry::Parameters("T", "comb", "up", BTagEntry::FLAV_C)
   );
   assert (b2.formula == string("2*x"));
 

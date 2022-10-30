@@ -24,19 +24,13 @@
 class BTagEntry
 {
 public:
-  enum OperatingPoint {
-    OP_LOOSE=0,
-    OP_MEDIUM=1,
-    OP_TIGHT=2,
-    OP_RESHAPING=3,
-  };
   enum JetFlavor {
-    FLAV_B=0,
-    FLAV_C=1,
-    FLAV_UDSG=2,
+    FLAV_B=5,
+    FLAV_C=4,
+    FLAV_UDSG=0,
   };
   struct Parameters {
-    OperatingPoint operatingPoint;
+    std::string operatingPoint;
     std::string measurementType;
     std::string sysType;
     JetFlavor jetFlavor;
@@ -49,7 +43,7 @@ public:
 
     // default constructor
     Parameters(
-      OperatingPoint op=OP_TIGHT,
+      std::string op="T",
       std::string measurement_type="comb",
       std::string sys_type="central",
       JetFlavor jf=FLAV_B,

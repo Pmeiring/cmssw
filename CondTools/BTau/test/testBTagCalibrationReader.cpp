@@ -35,7 +35,7 @@ int main()
   bc1.readCSV(csv1Stream);
 
   // test pt-dependent function
-  BTagCalibrationReader bcr1(BTagEntry::OP_LOOSE);
+  BTagCalibrationReader bcr1("L");
   bcr1.load(bc1, BTagEntry::FLAV_B, "comb");
   assert (eq(bcr1.eval(BTagEntry::FLAV_B, 3.0, 1.5), 0.));  // out of range
   assert (eq(bcr1.eval(BTagEntry::FLAV_B, 1.5, 3.0), 0.));  // out of range
@@ -46,7 +46,7 @@ int main()
   assert (eq(bcr1.eval(BTagEntry::FLAV_B, -1.5, 1.5), -3.));  // abseta
 
   // test discr-dependent function
-  BTagCalibrationReader bcr2(BTagEntry::OP_RESHAPING);
+  BTagCalibrationReader bcr2("shape");
   bcr2.load(bc1, BTagEntry::FLAV_B, "comb");
   assert (eq(bcr2.eval(BTagEntry::FLAV_B, 0.5, 0.5, 1.0), 0.));
   assert (eq(bcr2.eval(BTagEntry::FLAV_B, 0.5, 0.5, 4.0), 0.));
@@ -54,7 +54,7 @@ int main()
   assert (eq(bcr2.eval(BTagEntry::FLAV_B, -0.5, 0.5, 2.5), -5.));  // no abseta
 
   // test auto bounds
-  BTagCalibrationReader bcr3(BTagEntry::OP_MEDIUM, "central", {"up", "down"});
+  BTagCalibrationReader bcr3("M", "central", {"up", "down"});
   bcr3.load(bc1, BTagEntry::FLAV_C, "test");
   assert (eq(bcr3.eval_auto_bounds("central", BTagEntry::FLAV_C, 0.5, 100.), 200., 1e-3));
   assert (eq(bcr3.eval_auto_bounds("up",      BTagEntry::FLAV_C, 0.5, 100.), 210., 1e-3));

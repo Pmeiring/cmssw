@@ -5,7 +5,7 @@
 #include "FWCore/Utilities/interface/Exception.h"
 
 BTagEntry::Parameters::Parameters(
-  OperatingPoint op,
+  std::string op,
   std::string measurement_type,
   std::string sys_type,
   JetFlavor jf,
@@ -70,20 +70,20 @@ BTagEntry::BTagEntry(const std::string &csvLine)
   }
 
   // make parameters
-  unsigned op = stoi(vec[0]);
-  if (op > 3) {
+  std::string op = "shape";
+  if (op!="L" && op!="M" && op!="T" && op!="shape") {
     throw cms::Exception("BTagCalibration")
-          << "Invalid csv line; OperatingPoint > 3: "
+          << "Invalid csv line; OperatingPoint not in [L,M,T,shape]: "
           << csvLine;
   }
   unsigned jf = stoi(vec[3]);
-  if (jf > 2) {
+  if (jf != 0 && jf != 4 && jf != 5) {
     throw cms::Exception("BTagCalibration")
-          << "Invalid csv line; JetFlavor > 2: "
+          << "Invalid csv line; JetFlavor not in [0,4,5]: "
           << csvLine;
   }
   params = BTagEntry::Parameters(
-    BTagEntry::OperatingPoint(op),
+    op,
     vec[1],
     vec[2],
     BTagEntry::JetFlavor(jf),
@@ -190,7 +190,7 @@ BTagEntry::BTagEntry(const TH1* hist, BTagEntry::Parameters p):
   TAxis const* axis = hist->GetXaxis();
 
   // overwrite bounds with histo values
-  if (params.operatingPoint == BTagEntry::OP_RESHAPING) {
+  if (params.operatingPoint == "shape") {
     params.discrMin = axis->GetBinLowEdge(1);
     params.discrMax = axis->GetBinUpEdge(nbins);
   } else {

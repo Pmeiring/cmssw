@@ -18,7 +18,7 @@ public:
   };
 
 private:
-  BTagCalibrationReaderImpl(BTagEntry::OperatingPoint op,
+  BTagCalibrationReaderImpl(const std::string & op,
                             const std::string & sysType,
                             const std::vector<std::string> & otherSysTypes={});
 
@@ -44,7 +44,7 @@ private:
   std::pair<float, float> min_max_eta(BTagEntry::JetFlavor jf,
                                      float discr) const;
 
-  BTagEntry::OperatingPoint op_;
+  std::string op_;
   std::string sysType_;
   std::vector<std::vector<TmpEntry> > tmpData_;  // first index: jetFlavor
   std::vector<bool> useAbsEta_;                  // first index: jetFlavor
@@ -53,13 +53,13 @@ private:
 
 
 BTagCalibrationReader::BTagCalibrationReaderImpl::BTagCalibrationReaderImpl(
-                                             BTagEntry::OperatingPoint op,
+                                             const std::string & op,
                                              const std::string & sysType,
                                              const std::vector<std::string> & otherSysTypes):
   op_(op),
   sysType_(sysType),
-  tmpData_(3),
-  useAbsEta_(3, true)
+  tmpData_(6),
+  useAbsEta_(6, true)
 {
   for (const std::string & ost : otherSysTypes) {
     if (otherSysTypeReaders_.count(ost)) {
@@ -100,7 +100,7 @@ void BTagCalibrationReader::BTagCalibrationReaderImpl::load(
     te.discrMin = be.params.discrMin;
     te.discrMax = be.params.discrMax;
 
-    if (op_ == BTagEntry::OP_RESHAPING) {
+    if (op_ == "shape") {
       te.func = TF1("", be.formula.c_str(),
                     be.params.discrMin, be.params.discrMax);
     } else {
@@ -125,7 +125,7 @@ double BTagCalibrationReader::BTagCalibrationReaderImpl::eval(
                                              float pt,
                                              float discr) const
 {
-  bool use_discr = (op_ == BTagEntry::OP_RESHAPING);
+  bool use_discr = (op_ == "shape");
   if (useAbsEta_[jf] && eta < 0) {
     eta = -eta;
   }
@@ -216,7 +216,7 @@ std::pair<float, float> BTagCalibrationReader::BTagCalibrationReaderImpl::min_ma
                                                float eta,
                                                float discr) const
 {
-  bool use_discr = (op_ == BTagEntry::OP_RESHAPING);
+  bool use_discr = (op_ == "shape");
   if (useAbsEta_[jf] && eta < 0) {
     eta = -eta;
   }
@@ -252,7 +252,7 @@ std::pair<float, float> BTagCalibrationReader::BTagCalibrationReaderImpl::min_ma
                                                BTagEntry::JetFlavor jf,
                                                float discr) const
 {
-  bool use_discr = (op_ == BTagEntry::OP_RESHAPING);
+  bool use_discr = (op_ == "shape");
 
   const auto &entries = tmpData_.at(jf);
   float min_eta = 0., max_eta = 0.;
@@ -274,7 +274,7 @@ std::pair<float, float> BTagCalibrationReader::BTagCalibrationReaderImpl::min_ma
 }
 
 
-BTagCalibrationReader::BTagCalibrationReader(BTagEntry::OperatingPoint op,
+BTagCalibrationReader::BTagCalibrationReader(const std::string op,
                                              const std::string & sysType,
                                              const std::vector<std::string> & otherSysTypes):
   pimpl(new BTagCalibrationReaderImpl(op, sysType, otherSysTypes)) {}

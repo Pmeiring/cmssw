@@ -22,7 +22,7 @@ public:
   class BTagCalibrationReaderImpl;
 
   BTagCalibrationReader() {}
-  BTagCalibrationReader(BTagEntry::OperatingPoint op,
+  BTagCalibrationReader(const std::string op,
                         const std::string & sysType="central",
                         const std::vector<std::string> & otherSysTypes={});
 
