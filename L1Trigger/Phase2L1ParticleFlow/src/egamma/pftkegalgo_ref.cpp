@@ -202,7 +202,7 @@ void PFTkEGAlgoEmulator::link_emCalo2tk_composite(const PFRegionEmu &r,
                                         std::vector<int> &emCalo2tk, 
                                         std::vector<float> &emCaloTkBdtScore) const {
   unsigned int nTrackMax = std::min<unsigned>(track.size(), cfg.nTRACK_EGIN);
-  std::cout<<"doing loose dR matching"<<std::endl;
+  // std::cout<<"doing loose dR matching"<<std::endl;
   for (int ic = 0, nc = emcalo.size(); ic < nc; ++ic) {
     std::cout<<"cluster "<<ic<<std::endl;
     auto &calo = emcalo[ic];
@@ -319,7 +319,7 @@ void PFTkEGAlgoEmulator::run(const PFInputRegion &in, OutputRegion &out) const {
                   << std::endl;
     }
   }
-  std::cout<<"running"<<std::endl;
+  // std::cout<<"running"<<std::endl;
   // FIXME: can be removed in the endcap since now running with the "interceptor".
   // Might still be needed in barrel
   // filter and select first N elements of input clusters
@@ -332,7 +332,7 @@ void PFTkEGAlgoEmulator::run(const PFInputRegion &in, OutputRegion &out) const {
 
   std::vector<int> emCalo2tk(emcalo_sel.size(), -1);
   std::vector<float> emCaloTkBdtScore(emcalo_sel.size(), -999);
-  std::cout<<"about to start matching"<<std::endl;
+  // std::cout<<"about to start matching"<<std::endl;
 
   if(cfg.doCompositeTkEle) {
     link_emCalo2tk_composite(in.region, emcalo_sel, in.track, emCalo2tk, emCaloTkBdtScore);
@@ -487,6 +487,16 @@ EGIsoEleObjEmu &PFTkEGAlgoEmulator::addEGIsoEleToPF(std::vector<EGIsoEleObjEmu> 
   egiso.srcCluster = calo.src;
   egiso.srcTrack = track.src;
   egiso.bdtScore = bdtScore;
+  egiso.HoE = calo.floatHoe();
+  egiso.Srrtot = calo.floatSrrTot();
+  egiso.Deta = track.floatEta() - calo.floatEta();
+  egiso.Dphi = deltaPhi(track.floatPhi(), calo.floatPhi());
+  egiso.Dpt = track.floatPt()/calo.floatPt();
+  egiso.Meanz = calo.floatMeanZ();
+  egiso.Nstubs = track.hwStubs;
+  egiso.Chi2RPhi = 1;
+  egiso.Chi2RZ = 1;
+  egiso.Chi2Bend = 1;
   egobjs.push_back(egiso);
 
   if (debug_ > 2)

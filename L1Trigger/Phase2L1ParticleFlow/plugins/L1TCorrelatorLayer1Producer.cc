@@ -176,7 +176,7 @@ L1TCorrelatorLayer1Producer::L1TCorrelatorLayer1Producer(const edm::ParameterSet
 #if 0  // LATER
   produces<l1t::PFCandidateCollection>("TKVtx");
 #endif
-#if 0  // LATER
+#if 1  // LATER
   produces<std::vector<l1t::PFTrack>>("DecodedTK");
 #endif
 
@@ -365,7 +365,7 @@ void L1TCorrelatorLayer1Producer::produce(edm::Event &iEvent, const edm::EventSe
   iEvent.put(fetchHadCalo(), "Calo");
   iEvent.put(fetchTracks(), "TK");
   
-  #if 0
+  #if 1
     iEvent.put(fetchDecodedTracks(), "DecodedTK");
   #endif
 
@@ -1092,6 +1092,17 @@ void L1TCorrelatorLayer1Producer::putEgObjects(edm::Event &iEvent,
       tkele.setPFIsol(egele.floatRelIso(l1ct::EGIsoEleObjEmu::IsoType::PfIso));
       tkele.setEgBinaryWord(egele.pack());
       tkele.setCompositeBdtScore(egele.bdtScore);
+      tkele.setCompositeHoE(egele.HoE);
+      tkele.setCompositeSrrtot(egele.Srrtot);
+      tkele.setCompositeDeta(egele.Deta);
+      tkele.setCompositeDphi(egele.Dphi);
+      tkele.setCompositeDpt(egele.Dpt);
+      tkele.setCompositeMeanz(egele.Meanz);
+      tkele.setCompositeNstubs(egele.Nstubs);
+      tkele.setCompositeChi2RPhi(egele.Chi2RPhi);
+      tkele.setCompositeChi2RZ(egele.Chi2RZ);
+      tkele.setCompositeChi2Bend(egele.Chi2Bend);
+
       tkeles->push_back(tkele);
       nele_obj.push_back(tkeles->size() - 1);
     }
