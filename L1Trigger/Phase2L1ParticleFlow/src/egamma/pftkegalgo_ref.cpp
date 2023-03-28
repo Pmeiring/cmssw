@@ -271,12 +271,13 @@ float PFTkEGAlgoEmulator::compute_composite_score(CompositeCandidate &cand,
   ap_fixed<21,12,AP_RND_CONV,AP_SAT> dpt = tk.hwPt * calo_invPt;
   ap_fixed<21,12,AP_RND_CONV,AP_SAT> meanz = calo.hwMeanZ;
   ap_fixed<21,12,AP_RND_CONV,AP_SAT> dphi = tk.hwPhi - calo.hwPhi;
-  ap_fixed<21,12,AP_RND_CONV,AP_SAT> chi2 = tk.hwChi2;
-  ap_fixed<21,12,AP_RND_CONV,AP_SAT> tkz0 = tk.hwZ0;
   ap_fixed<21,12,AP_RND_CONV,AP_SAT> nstubs = tk.hwStubs;
+  ap_fixed<21,12,AP_RND_CONV,AP_SAT> chi2rphi = tk.hwRedChi2RPhi;
+  ap_fixed<21,12,AP_RND_CONV,AP_SAT> chi2rz = tk.hwRedChi2RZ;
+  ap_fixed<21,12,AP_RND_CONV,AP_SAT> chi2bend = tk.hwRedChi2Bend;
   
   // Run BDT inference
-  std::vector<ap_fixed<21,12,AP_RND_CONV,AP_SAT>> inputs = { hoe, tkpt, srrtot, deta, dpt, meanz, dphi, chi2, tkz0, nstubs } ;
+  std::vector<ap_fixed<21,12,AP_RND_CONV,AP_SAT>> inputs = { tkpt, hoe, srrtot, deta, dphi, dpt, meanz, nstubs, chi2rphi, chi2rz, chi2bend } ;
   std::vector<ap_fixed<12,3,AP_RND_CONV,AP_SAT>> bdt_score = composite_bdt_->decision_function(inputs);
 
   float bdt_score_CON = bdt_score[0];
