@@ -30,6 +30,8 @@ public:
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
+  void beginRun(const edm::Run&, const edm::EventSetup&) override;
+
 private:
   void produce(edm::Event&, edm::EventSetup const&) override;
 
@@ -46,6 +48,8 @@ private:
   edm::EDGetTokenT<std::vector<PCaloHit>> simHitsTokenHEfront_;
   edm::EDGetTokenT<std::vector<PCaloHit>> simHitsTokenHEback_;
   edm::ESGetToken<HGCalTriggerGeometryBase, CaloGeometryRecord> triggerGeomToken_;
+
+  const HGCalTriggerGeometryBase* cachedGeometry_;
 
   HGCalClusteringDummyImpl dummyClustering_;
   HGCalShowerShape showerShape_;
@@ -72,6 +76,10 @@ CaloTruthCellsProducer::CaloTruthCellsProducer(edm::ParameterSet const& config)
 
 CaloTruthCellsProducer::~CaloTruthCellsProducer() {}
 
+void CaloTruthCellsProducer::beginRun(const edm::Run& run, const edm::EventSetup& setup) {
+  cachedGeometry_ = &setup.getData(triggerGeomToken_);
+}
+
 void CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
   auto caloParticlesHandle = event.getHandle(caloParticlesToken_);
   auto const& caloParticles = *caloParticlesHandle;
@@ -79,7 +87,8 @@ void CaloTruthCellsProducer::produce(edm::Event& event, edm::EventSetup const& s
   auto const& triggerCellsHandle = event.getHandle(triggerCellsToken_);
   auto const& triggerCells = *triggerCellsHandle;
 
-  auto const& geometry = setup.getData(triggerGeomToken_);
+  // auto const& geometry = setup.getData(triggerGeomToken_);
+  auto const& geometry = *cachedGeometry_;
   ;
 
   dummyClustering_.setGeometry(&geometry);

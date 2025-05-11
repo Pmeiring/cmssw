@@ -228,11 +228,22 @@ phase2_hgcalV10.toModify(threshold_conc_proc,
                         )
 
 
+nosel_conc_proc = cms.PSet(ProcessorName  = cms.string('HGCalConcentratorProcessorSelection'),
+                               Method = cms.vstring(['noSelection']*3),
+                               threshold_silicon = cms.double(0.), # MipT
+                               threshold_scintillator = cms.double(0.), # MipT
+                               coarsenTriggerCells = cms.vuint32(0,0,0),
+                               fixedDataSizePerHGCROC = cms.bool(False),
+                               allTrigCellsInTrigSums = cms.bool(True),
+                               ctcSize = CTC_2_SIZES,
+                               )
+
+
 l1tHGCalConcentratorProducer = cms.EDProducer(
     "HGCalConcentratorProducer",
     InputTriggerCells = cms.InputTag('l1tHGCalVFEProducer:HGCalVFEProcessorSums'),
     InputTriggerSums = cms.InputTag('l1tHGCalVFEProducer:HGCalVFEProcessorSums'),
-    ProcessorParameters = threshold_conc_proc.clone()
+    ProcessorParameters = nosel_conc_proc.clone()
     )
 
 

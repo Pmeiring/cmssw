@@ -8,6 +8,7 @@
 #include "DataFormats/L1THGCal/interface/HGCalMulticluster.h"
 #include "DataFormats/Common/interface/AssociationMap.h"
 #include "DataFormats/Common/interface/OneToMany.h"
+#include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticleFwd.h"
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
 #include "DataFormats/ForwardDetId/interface/HGCalTriggerDetId.h"
@@ -32,7 +33,7 @@ private:
 
   HGCalTriggerTools triggerTools_;
 
-  edm::EDGetToken trigger_cells_token_, multiclusters_token_;
+  edm::EDGetToken trigger_cells_token_, multiclusters_token_, simclusters_token_;
   edm::EDGetToken simhits_ee_token_, simhits_fh_token_, simhits_bh_token_;
   edm::EDGetToken caloparticles_map_token_;
   bool fill_simenergy_;
@@ -69,8 +70,11 @@ private:
   std::vector<uint32_t> tc_multicluster_id_;
   std::vector<float> tc_multicluster_pt_;
   std::vector<int> tc_genparticle_index_;
+  std::vector<int> tc_simcluster_index_;
+  std::vector<int> tc_caloparticle_index_;
 
   typedef edm::AssociationMap<edm::OneToMany<CaloParticleCollection, l1t::HGCalTriggerCellBxCollection>> CaloToCellsMap;
+  typedef std::pair<size_t, float> IdxAndFraction;
 };
 
 DEFINE_EDM_PLUGIN(HGCalTriggerNtupleFactory, HGCalTriggerNtupleHGCTriggerCells, "HGCalTriggerNtupleHGCTriggerCells");
@@ -94,6 +98,8 @@ void HGCalTriggerNtupleHGCTriggerCells::initialize(TTree& tree,
       collector.consumes<l1t::HGCalTriggerCellBxCollection>(conf.getParameter<edm::InputTag>("TriggerCells"));
   multiclusters_token_ =
       collector.consumes<l1t::HGCalMulticlusterBxCollection>(conf.getParameter<edm::InputTag>("Multiclusters"));
+  simclusters_token_ = 
+      collector.consumes<SimClusterCollection>(conf.getParameter<edm::InputTag>("Simclusters"));
 
   if (fill_simenergy_) {
     simhits_ee_token_ = collector.consumes<edm::PCaloHitContainer>(conf.getParameter<edm::InputTag>("eeSimHits"));
@@ -139,8 +145,11 @@ void HGCalTriggerNtupleHGCTriggerCells::initialize(TTree& tree,
   tree.Branch(withPrefix("cluster_id"), &tc_cluster_id_);
   tree.Branch(withPrefix("multicluster_id"), &tc_multicluster_id_);
   tree.Branch(withPrefix("multicluster_pt"), &tc_multicluster_pt_);
-  if (fill_truthmap_)
+  if (fill_truthmap_){
     tree.Branch(withPrefix("genparticle_index"), &tc_genparticle_index_);
+    tree.Branch(withPrefix("simcluster_index"), &tc_simcluster_index_);
+    tree.Branch(withPrefix("caloparticle_index"), &tc_caloparticle_index_);
+  }
 }
 
 void HGCalTriggerNtupleHGCTriggerCells::fill(const edm::Event& e, const HGCalTriggerNtupleEventSetup& es) {
@@ -154,6 +163,13 @@ void HGCalTriggerNtupleHGCTriggerCells::fill(const edm::Event& e, const HGCalTri
   e.getByToken(multiclusters_token_, multiclusters_h);
   const l1t::HGCalMulticlusterBxCollection& multiclusters = *multiclusters_h;
 
+  // retrieve simclusters
+  edm::Handle<SimClusterCollection> simclusters_h;
+  e.getByToken(simclusters_token_, simclusters_h);
+  const SimClusterCollection& simclusters = *simclusters_h;
+
+  auto simClusterToRecEnergy = std::make_unique<std::unordered_map<int, float>>();
+
   // sim hit association
   std::unordered_map<uint32_t, double> simhits_ee;
   std::unordered_map<uint32_t, double> simhits_fh;
@@ -163,11 +179,65 @@ void HGCalTriggerNtupleHGCTriggerCells::fill(const edm::Event& e, const HGCalTri
 
   edm::Handle<CaloToCellsMap> caloparticles_map_h;
   std::unordered_map<uint32_t, unsigned> cell_to_genparticle;
+  std::unordered_map<uint32_t, unsigned> cell_to_caloparticle;
+  std::unordered_map<uint32_t, unsigned> cell_to_simcluster;
+  std::unordered_map<size_t, std::vector<IdxAndFraction>> tcToSimClusterAndEFrac;
+  std::unordered_map<size_t, std::vector<IdxAndFraction>> tcToCaloParticleAndEFrac;
+
+  triggerTools_.setGeometry(es.geometry.product());
+
+
   if (fill_truthmap_) {
-    e.getByToken(caloparticles_map_token_, caloparticles_map_h);
+    e.getByToken(caloparticles_map_token_, caloparticles_map_h); //caloParticlesToCells
+    int x=0;
     for (auto& keyval : *caloparticles_map_h) {
-      for (auto& tcref : keyval.val)
+      x+=1;
+      for (auto& tcref : keyval.val){
         cell_to_genparticle.emplace(tcref->detId(), keyval.key->g4Tracks().at(0).genpartIndex() - 1);
+
+
+        // Get detId of the current tc
+        uint32_t detId = tcref->detId();
+        float current_pt = keyval.key->pt(); // Current caloParticle pt
+
+        // Check if the tc is already in the map
+        auto it = cell_to_caloparticle.find(detId);
+        if (it == cell_to_caloparticle.end()) {
+          // If not in map, associate it with the current caloParticle index
+          cell_to_caloparticle[detId] = x;
+          std::cout << "Adding " << detId << " to list with pt " << current_pt << std::endl;
+        }
+        else {
+          // If already in map, compare pt values
+          auto& caloParticleRef = keyval.key;
+          if (caloParticleRef->pt() < current_pt) {
+              // Update map if current caloParticle has higher pt
+              cell_to_caloparticle[detId] = x;
+              std::cout << "Updating detId " << detId << " to caloParticle " << x 
+                        << " with higher pt " << current_pt << std::endl;
+          } else {
+              std::cout << "detId " << detId << " already associated with caloParticle " 
+                        << it->second << " having higher pt " << caloParticleRef->pt() << std::endl;
+          }
+        }
+      }
+    }
+
+
+    std::cout<<x<<"\tcaloparticles"<<std::endl;
+
+    // Make a list of hits per detId and indices to SimClusters
+    for (size_t s = 0; s < simclusters_h->size(); s++) {
+      const auto& sc = simclusters_h->at(s);
+      // Need to initialize because not all SimClusters lead to rechits
+      (*simClusterToRecEnergy)[s] = 0.;
+      for (auto& hf : sc.hits_and_fractions()) {
+        // Can have two unique hits with the same detId
+        auto tcfromc = triggerTools_.getTriggerGeometry()->getTriggerCellFromCell(hf.first);
+        // std::cout<<"s="<<s<<"\tc_id="<<hf.first<<"\ttc_id="<<tcfromc<<std::endl;
+
+        tcToSimClusterAndEFrac[tcfromc].push_back({s, hf.second});
+      }
     }
   }
 
@@ -185,7 +255,6 @@ void HGCalTriggerNtupleHGCTriggerCells::fill(const edm::Event& e, const HGCalTri
     }
   }
 
-  triggerTools_.setGeometry(es.geometry.product());
 
   clear();
   for (auto tc_itr = trigger_cells.begin(0); tc_itr != trigger_cells.end(0); tc_itr++) {
@@ -271,6 +340,78 @@ void HGCalTriggerNtupleHGCTriggerCells::fill(const edm::Event& e, const HGCalTri
         tc_genparticle_index_.push_back(-1);
       else
         tc_genparticle_index_.push_back(itr->second);
+
+
+      auto itr2(cell_to_caloparticle.find(tc_itr->detId()));
+      if (itr2 == cell_to_caloparticle.end())
+        tc_caloparticle_index_.push_back(-1);
+      else
+        tc_caloparticle_index_.push_back(itr2->second);
+
+
+      // For each trigger cell, store index to simcluster with highest fraction of total recorded energy deposit
+      // Need to sort before inserting into AssociationMap
+      // std::cout<<"tc_id="<<tc_itr->detId()<<std::endl;
+      bool skipTC2SC=false;
+      auto match = tcToSimClusterAndEFrac.find(tc_itr->detId());
+      if (match == std::end(tcToSimClusterAndEFrac)) {
+        tc_simcluster_index_.push_back(-1);
+        skipTC2SC=true;
+      }
+      if (!skipTC2SC){
+        // std::cout<<"match="<<match->first<<std::endl;
+        auto& scIdxAndFrac = match->second;
+        // Sort by energy fraction
+        std::sort(std::begin(scIdxAndFrac), std::end(scIdxAndFrac), 
+              [](auto& a, auto& b) { return a.second > b.second; });
+
+        for (size_t m = 0; m < scIdxAndFrac.size(); m++) {
+          float fraction = scIdxAndFrac[m].second;
+          int scIdx = scIdxAndFrac[m].first;
+          (*simClusterToRecEnergy)[scIdx] += tc_itr->energy() * fraction;
+          // Best match is the simCluster that carries the hit with the highest energy fraction
+          // (that is, responsible for the largest deposit in the detId)
+          if (m == 0){
+            // std::cout<<"leading scIdx="<<scIdx<<std::endl;
+            tc_simcluster_index_.push_back(scIdx);
+          }
+          // SimClusterRef simclus(simclusters_h, scIdx);
+          // assocMap->insert(caloRh, std::make_pair(simclus, fraction));
+        }
+      }
+
+      // // For each trigger cell, store index to caloparticle with highest fraction of total recorded energy deposit
+      // // Need to sort before inserting into AssociationMap
+      // bool skipTC2CP=false;
+      // auto match2 = tcToCaloParticleAndEFrac.find(tc_itr->detId());
+      // // std::cout<<tc_itr->detId()<<std::endl;
+      // if (match2 == std::end(tcToCaloParticleAndEFrac)) {
+      //   tc_caloparticle_index_.push_back(-1);
+      //   skipTC2CP=true;
+      // }
+      // if (!skipTC2CP){
+      //   auto& cpIdxAndFrac = match2->second;
+      //   // Sort by energy fraction
+      //   std::sort(std::begin(cpIdxAndFrac), std::end(cpIdxAndFrac), 
+      //         [](auto& a, auto& b) { return a.second > b.second; });
+
+      //   for (size_t m = 0; m < cpIdxAndFrac.size(); m++) {
+      //     float fraction = cpIdxAndFrac[m].second;
+      //     int cpIdx = cpIdxAndFrac[m].first;
+      //     // (*simClusterToRecEnergy)[scIdx] += tc_itr->energy() * fraction;
+      //     // Best match is the simCluster that carries the hit with the highest energy fraction
+      //     // (that is, responsible for the largest deposit in the detId)
+      //     if (m == 0){
+      //       // std::cout<<"leading scIdx="<<scIdx<<std::endl;
+      //       tc_caloparticle_index_.push_back(cpIdx);
+      //     }
+      //     // SimClusterRef simclus(simclusters_h, scIdx);
+      //     // assocMap->insert(caloRh, std::make_pair(simclus, fraction));
+      //   }
+      // }
+
+
+
     }
   }
 }
@@ -350,4 +491,6 @@ void HGCalTriggerNtupleHGCTriggerCells::clear() {
   tc_multicluster_id_.clear();
   tc_multicluster_pt_.clear();
   tc_genparticle_index_.clear();
+  tc_simcluster_index_.clear();
+  tc_caloparticle_index_.clear();
 }
