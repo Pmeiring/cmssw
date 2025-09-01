@@ -164,6 +164,7 @@ namespace pat {
     muon.setSoftMvaRun3Value(computeSoftMvaRun3(*softMuonMvaRun3Booster_, muon));
   }
 
+  template <typename T>
   void LeptonUpdater<T>::recomputePfIso(T &lep, const pat::PackedCandidateCollection* pc) const {}
   
   template <>
