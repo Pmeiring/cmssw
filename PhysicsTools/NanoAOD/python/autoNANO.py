@@ -51,6 +51,7 @@ autoNANO = {
                'customize': ','.join(['PhysicsTools/NanoAOD/l1trig_cff.nanoL1TrigObjCustomizeFull',
                                       'DPGAnalysis/L1TNanoAOD/l1tNano_cff.addCaloFull',
                                       'L1Trigger/Configuration/customiseReEmul.L1TReEmulFromRAW'])},
+    'HGCALTP' : {'sequence': 'L1Trigger/L1THGCalUtilities/hgcalTriggerNtuples_cff.hgcPh2NanoSequence'},
     # Phase-2 L1 DPG (from RAW/DIGI)
     'Phase2L1DPG' : {'sequence': 'DPGAnalysis/Phase2L1TNanoAOD/l1tPh2Nano_cff.l1tPh2NanoSequence',
                      'customize': ','.join([
