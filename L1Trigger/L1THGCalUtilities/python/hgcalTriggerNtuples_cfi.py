@@ -5,6 +5,7 @@ import RecoLocalCalo.HGCalRecProducers.HGCalUncalibRecHit_cfi as recoparam
 import RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi as recocalibparam
 import L1Trigger.L1THGCal.hgcalLayersCalibrationCoefficients_cfi as layercalibparam
 
+from L1Trigger.L1THGCal.l1tHGCalConcentratorProducer_cfi import autoEncoder_conc_proc
 
 fcPerMip = recoparam.HGCalUncalibRecHit.HGCEEConfig.fCPerMIP
 keV2fC = digiparam.hgceeDigitizer.digiCfg.keV2fC
@@ -50,6 +51,26 @@ ntuple_digis = cms.PSet(
     bhSimHits = cms.InputTag('g4SimHits:HGCHitsHEback'),
     isSimhitComp = cms.bool(False),
     digiBXselect = cms.vuint32(2)
+)
+
+ntuple_wafers = cms.PSet(
+    NtupleName = cms.string('HGCalTriggerNtupleHGCWafers'),
+    TriggerCells = cms.InputTag('l1tHGCalConcentratorProducer:HGCalConcentratorProcessorSelection'),
+    eeSimHits = cms.InputTag('g4SimHits:HGCHitsEE'),
+    fhSimHits = cms.InputTag('g4SimHits:HGCHitsHEfront'),
+    bhSimHits = cms.InputTag('g4SimHits:HGCHitsHEback'), 
+    fcPerMip = fcPerMip,
+    keV2fC = keV2fC,
+    layerWeights = layercalibparam.triggerWeights.weights,
+    thicknessCorrections = thicknessCorrections,
+    bitsPerADC = autoEncoder_conc_proc.bitsPerADC, 
+    bitsPerNorm = autoEncoder_conc_proc.bitsPerNorm,
+    bitsPerCALQ = autoEncoder_conc_proc.bitsPerCALQ,
+    bitsPerInput = autoEncoder_conc_proc.nBitsPerInput,
+    useModuleFactor = autoEncoder_conc_proc.useModuleFactor,
+    useTransverseADC = autoEncoder_conc_proc.useTransverseADC,
+    bitShiftNormalize = autoEncoder_conc_proc.bitShiftNormalization,
+    normByMax = autoEncoder_conc_proc.normByMax,
 )
 
 ntuple_triggercells = cms.PSet(
@@ -109,6 +130,7 @@ l1tHGCalTriggerNtuplizer = cms.EDAnalyzer(
         ntuple_digis,
         ntuple_triggercells,
         ntuple_triggersums,
+        ntuple_wafers,
         ntuple_multiclusters,
         ntuple_towers
     )

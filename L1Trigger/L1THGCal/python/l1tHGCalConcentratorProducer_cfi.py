@@ -192,7 +192,13 @@ autoEncoder_conc_proc = cms.PSet(ProcessorName  = cms.string('HGCalConcentratorP
                                  cellRemapNoDuplicates = cms.vint32(autoencoder_triggerCellRemap),
                                  encoderShape = cms.vuint32(1,4,4,3),
                                  decoderShape = cms.vuint32(1,16),
-                                 nBitsPerInput = cms.int32(8),
+                                 bitsPerADC = cms.uint32(22),
+                                 bitsPerNorm = cms.uint32(12),
+                                 bitsPerCALQ = cms.uint32(23),
+                                 nBitsPerInput = cms.uint32(8),
+                                 useTransverseADC = cms.bool(True),
+                                 useModuleFactor = cms.bool(False),
+                                 normByMax = cms.bool(False),
                                  maxBitsPerOutput = cms.int32(9),
                                  bitsPerLink = autoEncoder_bitsPerOutputLink,
                                  modelFiles = cms.VPSet([autoEncoder_training_2eLinks, autoEncoder_training_3eLinks, autoEncoder_training_4eLinks, autoEncoder_training_5eLinks]),
@@ -213,8 +219,6 @@ autoEncoder_conc_proc = cms.PSet(ProcessorName  = cms.string('HGCalConcentratorP
                                  coarseTCCompression = coarseTCCompression_proc.clone(),
                                  superTCCalibration = vfe_proc.clone(),
 )
-
-
 
 
 from Configuration.Eras.Modifier_phase2_hgcalV10_cff import phase2_hgcalV10

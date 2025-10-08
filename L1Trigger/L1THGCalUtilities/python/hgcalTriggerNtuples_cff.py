@@ -12,9 +12,9 @@ hgcClusterTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     src = cms.InputTag('l1tHGCalBackEndLayer2Producer:HGCalBackendLayer2Processor3DClustering'),
     doc = cms.string("HGCal 3D clusters"),
     cut  = cms.string("pt > 1"),
-    name = cms.string("HGCal3DCl"),
-    singleton = cms.bool(False), # the number of entries is variable
-    extension = cms.bool(False), # this is the main table
+    name = cms.string("L1THGCAL_cl3d"),
+    singleton = cms.bool(False),
+    extension = cms.bool(False),
     variables = cms.PSet(
         pt  = LazyVar("pt",  float,precision=8),
         phi = LazyVar("phi", float,precision=8),
@@ -67,19 +67,84 @@ hgcClusterTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
 
 from L1Trigger.Phase2L1ParticleFlow.l1tPFClustersFromHGC3DClusters_cfi import l1tPFClustersFromHGC3DClusters
 from L1Trigger.L1THGCal.egammaIdentification import egamma_identification_histomax
-hgcClusterExtTable = cms.EDProducer("L1HGC3DclTableProducer",
+hgcClusterExtTable = cms.EDProducer("HGCal3DclTableProducer",
                 src = cms.InputTag('l1tHGCalBackEndLayer2Producer:HGCalBackendLayer2Processor3DClustering'),
                 cut  = cms.string("pt > 1"),
-                name = cms.string("HGCal3DCl"),
+                name = cms.string("L1THGCAL_cl3d"),
                 emVsPionID=l1tPFClustersFromHGC3DClusters.emVsPionID,
                 emVsPUID=l1tPFClustersFromHGC3DClusters.emVsPUID,
                 EGIdentification = egamma_identification_histomax.clone(),
             )
 
+import SimCalorimetry.HGCalSimProducers.hgcalDigitizer_cfi as digiparam
+import RecoLocalCalo.HGCalRecProducers.HGCalUncalibRecHit_cfi as recoparam
+import RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi as recocalibparam
+import L1Trigger.L1THGCal.hgcalLayersCalibrationCoefficients_cfi as layercalibparam
+from L1Trigger.L1THGCal.l1tHGCalConcentratorProducer_cfi import autoEncoder_conc_proc
+hgcWaferTable = cms.EDProducer("HGCalWaferTableProducer",
+    TriggerCells = cms.InputTag("l1tHGCalConcentratorProducer:HGCalConcentratorProcessorSelection"),
+    eeSimHits = cms.InputTag("g4SimHits","HGCHitsEE"),
+    fhSimHits = cms.InputTag("g4SimHits","HGCHitsHEfront"),
+    bhSimHits = cms.InputTag("g4SimHits","HGCHitsHEback"),
+    bitsPerADC = autoEncoder_conc_proc.bitsPerADC, 
+    bitsPerNorm = autoEncoder_conc_proc.bitsPerNorm,
+    bitsPerCALQ = autoEncoder_conc_proc.bitsPerCALQ,
+    bitsPerInput = autoEncoder_conc_proc.nBitsPerInput,
+    useModuleFactor = autoEncoder_conc_proc.useModuleFactor,
+    useTransverseADC = autoEncoder_conc_proc.useTransverseADC,
+    bitShiftNormalize = autoEncoder_conc_proc.bitShiftNormalization,
+    normByMax = autoEncoder_conc_proc.normByMax,
+    keV2fC = digiparam.hgceeDigitizer.digiCfg.keV2fC,
+    fcPerMip = cms.vdouble(recoparam.HGCalUncalibRecHit.HGCEEConfig.fCPerMIP),
+    layerWeights = layercalibparam.triggerWeights.weights,
+    thicknessCorrections = cms.vdouble(recocalibparam.HGCalRecHit.thicknessCorrection)
+)
+
+hgcTriggerCellTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
+    src = cms.InputTag('l1tHGCalConcentratorProducer','HGCalConcentratorProcessorSelection','HLT'),
+    doc = cms.string("HGCal TriggerCells"),
+    cut  = cms.string(""),
+    name = cms.string("L1THGCAL_tc"),
+    singleton = cms.bool(False),
+    extension = cms.bool(False),
+    variables = cms.PSet(
+        detId = LazyVar("detId",int),
+        subdetId = LazyVar("subdetId",int),
+        # zside = LazyVar("zside",int),
+        # layer = LazyVar("layer",int),
+        # waferu = LazyVar("waferu",int),
+        # waferv = LazyVar("waferv",int),
+        # wafertype = LazyVar("wafertype",int),
+        # cellu = LazyVar("cellu",int),
+        # cellv = LazyVar("cellv",int),
+        # data = LazyVar("data",float),
+        uncompressedCharge = LazyVar("uncompressedCharge",int),
+        compressedCharge = LazyVar("compressedCharge",int),
+        pt = LazyVar("pt",float),
+        mipPt = LazyVar("mipPt",float),
+        # energy = LazyVar("energy",float),
+        # simenergy = LazyVar("simenergy",float),
+        eta = LazyVar("eta",float),
+        phi = LazyVar("phi",float),
+        # x = LazyVar("x",float),
+        # y = LazyVar("y",float),
+        # z = LazyVar("z",float),
+        # cluster_id = LazyVar("cluster_id",int),
+        # multicluster_id = LazyVar("multicluster_id",int),
+        # multicluster_pt = LazyVar("multicluster_pt",float),
+        # genparticle_index = LazyVar("genparticle_index",int),
+    )
+)
+
+
+from L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff import L1THGCalTriggerPrimitivesTask
+
 ## HGCAL objects
 p2HGCTablesTask = cms.Task(
+    hgcTriggerCellTable,
+    hgcWaferTable,
     hgcClusterTable,
     hgcClusterExtTable,
 )
 
-hgcPh2NanoSequence = cms.Sequence(p2HGCTablesTask)
+hgcPh2NanoSequence = cms.Sequence(L1THGCalTriggerPrimitivesTask, p2HGCTablesTask)

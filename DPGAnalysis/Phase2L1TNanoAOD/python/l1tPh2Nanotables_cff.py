@@ -447,7 +447,7 @@ caloJetTable = jetTable_template.clone(
 
 ### SUMS
 
-L1puppiCandTable = cms.EDProducer("L1PFCandTableProducer",
+L1puppiCandTable = cms.EDProducer("L1TPFCandTableProducer",
     commonSel = cms.string("pt > 0.0 && abs(eta) < 10.0"),
     cands = cms.PSet(
         L1Puppi = cms.InputTag("l1tLayer1", "Puppi")
