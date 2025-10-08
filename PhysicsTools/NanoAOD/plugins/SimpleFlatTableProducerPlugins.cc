@@ -78,7 +78,7 @@ DEFINE_FWK_MODULE(SimpleCandidateFlatTableProducer);
 DEFINE_FWK_MODULE(SimplePFCandidateFlatTableProducer);
 DEFINE_FWK_MODULE(SimplePFTauCandidateFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleCandidateCollectionFlatTableProducer);
-DEFINE_FWK_MODULE(SimpleTrackFlatTableProducer);
+// DEFINE_FWK_MODULE(SimpleTrackFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleSuperclusterFlatTableProducer);
 DEFINE_FWK_MODULE(SimplePFJetFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleGenJetFlatTableProducer);
