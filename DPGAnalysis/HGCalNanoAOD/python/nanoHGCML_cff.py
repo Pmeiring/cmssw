@@ -17,18 +17,19 @@ from DPGAnalysis.TrackNanoAOD.tracks_cff import *
 from DPGAnalysis.PFNanoAOD.pfCands_cff import *
 from DPGAnalysis.PFNanoAOD.pfTruth_cff import *
 
-nanoMetadata = cms.EDProducer("UniqueStringProducer",
-    strings = cms.PSet(
-        tag = cms.string("untagged"),
-    )
-)
+# nanoMetadata = cms.EDProducer("UniqueStringProducer",
+#     strings = cms.PSet(
+#         tag = cms.string("untagged"),
+#     )
+# )
 
 genParticleTable.src = "genParticles"
 genParticleTable.variables = cms.PSet(genParticleTable.variables,
     charge = CandVars.charge)
 
-nanoHGCMLSequence = cms.Sequence(nanoMetadata+
-                                 hgcRecHits+ #so that modules can use them
+nanoHGCMLSequence = cms.Sequence(
+    # nanoMetadata+
+    hgcRecHits+ #so that modules can use them
     genVertexTable+genVertexT0Table+genParticleTable+
     cms.Sequence(layerClusterTables)+
     simTrackTables+
